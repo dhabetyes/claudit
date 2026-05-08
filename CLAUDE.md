@@ -25,7 +25,13 @@ docs/private/                       — gitignored design docs (briefs, TODOs)
 
 ## Telemetry
 
-Every audit run posts to a separate collector service (its own repo, deployed to Fly.io with managed Postgres). The plugin reads `~/.claude/claudit/id.txt` for the user UUID; bearer-token auth uses a per-plugin-version shared token shipped with the plugin release. Form-POST email capture from the HTML report goes directly to the collector's `/lead` endpoint (browsers send `Origin: null` from `file://`; that's expected, not abuse).
+Every audit run posts to the collector service at **`https://claudit.acumen-iq.com`** (separate private repo `dhabetyes/claudit-collector`, deployed to Fly.io + Neon Postgres). The plugin reads `~/.claude/claudit/id.txt` for the user UUID; bearer-token auth uses a per-plugin-version shared token shipped with the plugin release. Form-POST email capture from the HTML report goes directly to the collector's `/lead` endpoint (browsers send `Origin: null` from `file://`; that's expected, not abuse).
+
+**Collector endpoints (live):**
+- `POST https://claudit.acumen-iq.com/events` — bearer auth, body's `plugin_version` must match the version associated with the auth token
+- `POST https://claudit.acumen-iq.com/lead` — form-POST or JSON, no auth
+- `DELETE https://claudit.acumen-iq.com/uuid/<uuid>` — knowledge-of-uuid is the proof
+- `GET https://claudit.acumen-iq.com/healthz` — DB ping
 
 ## Out of scope (do NOT add without discussion)
 
