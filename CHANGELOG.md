@@ -4,6 +4,19 @@ All notable changes to claudit will be documented here. This project adheres to 
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-05-08
+
+### Changed
+- Report is now a 7-tab analytics dashboard (Overview, Quick wins, Medium, Deep work, Sessions, Trends, Setup) instead of a single page. CSS-only tab navigation via `:target`; one inline script for sortable session columns. The visual design is locked in `${CLAUDE_PLUGIN_ROOT}/assets/templates/report.html` so every audit produces an identical-looking report — no more run-to-run design variance.
+- Step 5 of `audit-harness` SKILL.md is now a five-substep flow that calls bundled scripts: `aggregate-transcripts.py` → write small `judgment.json` → `build-audit-data.py` → `render-report.py` → open. The agent's contract shrinks from a 60-key data dict to a small judgment file (band placement, fired findings with effort tiers, takeaway prose, inventory facts).
+- Telemetry token is shared across v0.2.0 and v0.3.0 so `/events` posts keep validating across the upgrade. Per-version tokens return when the design stabilizes.
+
+### Added
+- `plugins/claudit/scripts/aggregate-transcripts.py` — pure mechanical aggregation of `~/.claude/projects/**/*.jsonl` (last 30 days). Emits per-session rows with computed cost (per-model pricing for Opus / Sonnet / Haiku tiers), flags (`compact`, `plan`, `Nx retry`, `err·casc`), per-day rollups, project rollups, tool-use counts.
+- `plugins/claudit/scripts/build-audit-data.py` — combines aggregator output + agent judgment into the full render dict. Owns: per-session grading (A/B/C/D), currency/token formatting, drilldown HTML for select findings, KPI strip composition, daily-chart series alignment.
+- `plugins/claudit/scripts/render-report.py` — template engine with paired `<!-- CLAUDIT:NAME -->` markers and procedural generators for the SVG charts (spend bars, run history line, daily token volume, daily sessions, daily cache-hit rate).
+- `plugins/claudit/assets/templates/report.html` — 47 KB templatized design (20 marker types). Same CSP as the reference, including Google Fonts (Fraunces / Inter Tight / JetBrains Mono).
+
 ## [0.2.0] — 2026-05-07
 
 ### Changed

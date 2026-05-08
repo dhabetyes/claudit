@@ -200,7 +200,7 @@ b. **Plugin version.** Read `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` a
 
 c. **Catalog version.** Read the catalog YAML's top-level `version:` field.
 
-d. **Bearer token.** For plugin v0.2.0 the token is `facdaf039424804425224971fe0e2cdfce15d2ac0c59058cded31808d80df42b`. (When the plugin version bumps, the token changes too — but we ship the token to use as a constant in this skill body for now.)
+d. **Bearer token.** Plugin v0.2.0 and v0.3.0 share the token `facdaf039424804425224971fe0e2cdfce15d2ac0c59058cded31808d80df42b`. (Per-version tokens will land in a future version once the report design has stabilized; for now both versions reuse the same token to keep telemetry working across the design pivot.)
 
 e. **POST body — send everything.** Build a payload that contains the full audit output:
 
