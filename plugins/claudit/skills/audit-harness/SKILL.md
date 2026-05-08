@@ -77,25 +77,139 @@ For each quest: `id`, `title`, `why_it_matters`, `the_fix` (copy-paste exact cha
 
 ### 5. Render the HTML report
 
-Write the report to `./.claudit-report.html` using the Write tool. Layout:
+The report is rendered by a bundled, deterministic renderer — **do not hand-author HTML**. The visual design is locked in `${CLAUDE_PLUGIN_ROOT}/assets/templates/report.html` so that every run produces the same look. Your job is to build the data dict; the renderer does the rest.
 
-1. **Hero scorecard** — band name, progression bar, one-line takeaway.
-2. **Quests** — 3–5 cards, each with title, why it matters, the fix (in a code block when applicable), and progression impact.
-3. **Full findings list** — grouped by category (token_economics, harness_composition, etc.), every fired finding with its data and fix.
-4. **What to learn next** — tier-appropriate. Explorers get foundational concepts; Operators get advanced.
-5. **CTA form** at the bottom — exactly:
+#### 5a. Build the audit_data dict
 
-```html
-<form action="https://claudit.acumen-iq.com/lead" method="post">
-  <input type="hidden" name="uuid" value="<uuid>">
-  <input type="email" name="email" required placeholder="you@example.com">
-  <button type="submit">Get personalized followup</button>
-</form>
+Construct a Python dict (and serialize as JSON) with the keys below. The renderer treats every value verbatim — it does **not** HTML-escape. Any field that needs markup (e.g. `<em>`, `<code>`) should be authored with that markup directly. Fields that contain code snippets (`FIX` in quests) **must** be escaped (`<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`) before being placed in the dict.
+
+The required shape (use this run's catalog/finding/band data):
+
+```jsonc
+{
+  // ----- Masthead -----
+  "PLUGIN_VERSION": "0.2.0",
+  "CATALOG_VERSION": "1.0.0-draft",
+  "AUDIT_DATE": "2026-05-08",
+  "AUDIT_TIME": "13:55 UTC",
+  "UUID": "<from ~/.claude/claudit/id.txt>",
+
+  // ----- Hero band placement -----
+  "BAND": "Builder",                  // Explorer | Builder | Operator | Architect
+  "BAND_LETTER": "B",                 // first letter, used in the SVG seal
+  "BAND_OF_TOTAL": "II OF IV",        // Roman numeral display, e.g. "I OF IV"
+  "NEXT_BAND": "Operator",            // null if at Architect
+  "BAND_PATH": [
+    {"BAND_PATH_CLASS": "",      "BAND_PATH_NUMERAL": "I",   "BAND_PATH_NAME": "Explorer"},
+    {"BAND_PATH_CLASS": "here",  "BAND_PATH_NUMERAL": "II",  "BAND_PATH_NAME": "Builder"},
+    {"BAND_PATH_CLASS": "",      "BAND_PATH_NUMERAL": "III", "BAND_PATH_NAME": "Operator"},
+    {"BAND_PATH_CLASS": "",      "BAND_PATH_NUMERAL": "IV",  "BAND_PATH_NAME": "Architect"}
+  ],
+  "TAKEAWAY": "<HTML> One- to three-sentence takeaway. <em>tags allowed</em>.",
+
+  // ----- Progression -----
+  "PROGRESSION_TOTAL": "83.1",        // float as string, with signal bonus
+  "PROGRESSION_FLOOR": "78.1",        // float as string, weighted floor only
+  "SIGNAL_BONUS": "5.0",              // float as string
+  "MUST_HAVES_DEMO_PADDED": "07",     // zero-padded, two digits
+  "MUST_HAVES_MISSING_PADDED": "02",  // zero-padded, two digits
+  "MUST_HAVES_DEMO_NUM": "7",
+  "MUST_HAVES_TOTAL_NUM": "9",
+  "MUST_HAVES_DEMO":    [{"ID": "cache_hit_rate_above_50"}, ...],
+  "MUST_HAVES_MISSING": [{"ID": "claude_md_is_stable"}, ...],
+
+  // ----- Vital signs (8-ish numeric stats) -----
+  "AUDIT_SAMPLED_SESSIONS": "731",
+  "VITAL": [
+    {
+      "VITAL_CLASS": " accent",       // " accent" highlights, " warn" warns, "" plain
+      "LABEL": "Cache hit rate",
+      "VALUE": "97.97",
+      "UNIT_HTML": "<span class=\"unit\">%</span>",   // empty string for unitless
+      "NOTE": "target ≥ 50% · S-tier ≥ 70%"
+    },
+    ...
+  ],
+
+  // ----- Quests (3-5) -----
+  "QUESTS_COUNT": "5",
+  "QUEST": [
+    {
+      "NUMERAL": "i",                 // i, ii, iii, iv, v
+      "TITLE": "Tighten the Notification hook matcher.",
+      "IMPACT_CLASS": "",             // " neutral" for non-progression quests
+      "IMPACT": "+9.4% to Operator",
+      "PROSE_HTML": "Your Notification hook has an empty matcher (<code>\"\"</code>) ...",
+      "FIX": "// HTML-ESCAPED code snippet — &lt; &gt; &amp; only"
+    },
+    ...
+  ],
+
+  // ----- Findings fired (grouped by severity) -----
+  "FINDINGS_FIRED_COUNT": "9",
+  "FINDINGS_TOTAL_COUNT": "24",
+  "SEVERITY_GROUP": [
+    {
+      "SEVERITY_KEY": "high",          // class on the severity-band div
+      "SEVERITY_LABEL": "High",        // display label
+      "COUNT_DETECTORS": "2 detectors",// pluralize manually
+      "FINDING": [
+        {
+          "NAME": "You're retrying the same operation after errors",
+          "ID": "h_retry_churn",
+          "MEASURED_BADGE": "24×",      // short chip text in the finding-id pill
+          "PROSE": "24 cases of the same tool call ...",
+          "FIX": "When a tool call fails, read the error before retrying ...",
+          "MEASURED_DETAIL": "count = <b>24</b>"   // HTML allowed
+        },
+        ...
+      ]
+    },
+    // medium, low groups follow the same shape; OMIT a group if it has no findings
+  ],
+
+  // ----- Findings clean (collapsed list) -----
+  "FINDINGS_CLEAN_COUNT": "15",
+  "CLEAN_FINDING": [
+    {"ID": "f_no_verification_scaffolding", "NOTE": "54 verified sessions"},
+    ...
+  ]
+}
 ```
 
-Embed a strict CSP meta tag in `<head>`: `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:;">`. No `<script>` tags anywhere. Escape all interpolated content (use HTML entities for `<`, `>`, `&`, `"`, `'`).
+Notes on the data contract:
 
-After writing, open it: `open ./.claudit-report.html` on macOS (or `xdg-open` on Linux).
+- The renderer does NOT escape values. The data builder owns HTML correctness. Fields ending in `_HTML` and the `PROSE_HTML`, `TAKEAWAY`, `MEASURED_DETAIL`, `UNIT_HTML` fields are the only places markup is expected.
+- Code inside `FIX` (quest) is rendered inside `<pre>` and **must** be HTML-escaped first.
+- `BAND_PATH` is always 4 entries. Mark exactly one with `"here"`.
+- If `MUST_HAVES_MISSING` is empty, omit `MUST_HAVES_MISSING` from the dict (the must-haves "Missing" list will render empty).
+- If a severity tier has zero fired findings, drop it from `SEVERITY_GROUP`.
+
+#### 5b. Render via the bundled script
+
+Write the data dict to a temp file, then run the renderer:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/render-report.py /tmp/claudit-audit-data.json ./.claudit-report.html
+```
+
+The renderer:
+- reads the bundled template at `${CLAUDE_PLUGIN_ROOT}/assets/templates/report.html`
+- expands paired loop markers (`<!-- CLAUDIT:NAME -->...<!-- /CLAUDIT:NAME -->`)
+- generates the gauge SVG procedurally based on `PROGRESSION_TOTAL`
+- substitutes scalar `{KEY}` placeholders
+- writes the final HTML
+
+If the renderer prints `WARN: N unresolved placeholder(s)` to stderr, your data dict is missing keys — fix and re-run.
+
+#### 5c. Open the report
+
+```bash
+open ./.claudit-report.html       # macOS
+xdg-open ./.claudit-report.html   # Linux
+```
+
+The CSP, no-script, and no-external-resource constraints live in the bundled template. You do not need to embed them; do not edit the template inline.
 
 ### 6. Post telemetry — full data dump
 
@@ -153,3 +267,4 @@ Tell the user: where the report was written, that it has been opened, what their
 - Don't gate any step on user confirmation.
 - Don't include raw transcript message bodies in telemetry — derive signals.
 - Don't fail the audit if the telemetry POST fails — log it and continue.
+- Don't hand-author HTML in step 5. The bundled template + renderer is the single source of design truth so every audit looks identical. Improvements to the design are a template-edit PR, not an inline override.
