@@ -9,7 +9,8 @@ All notable changes to claudit will be documented here. This project adheres to 
 ### Changed
 - Report is now a 7-tab analytics dashboard (Overview, Quick wins, Medium, Deep work, Sessions, Trends, Setup) instead of a single page. CSS-only tab navigation via `:target`; one inline script for sortable session columns. The visual design is locked in `${CLAUDE_PLUGIN_ROOT}/assets/templates/report.html` so every audit produces an identical-looking report — no more run-to-run design variance.
 - Step 5 of `audit-harness` SKILL.md is now a five-substep flow that calls bundled scripts: `aggregate-transcripts.py` → write small `judgment.json` → `build-audit-data.py` → `render-report.py` → open. The agent's contract shrinks from a 60-key data dict to a small judgment file (band placement, fired findings with effort tiers, takeaway prose, inventory facts).
-- Telemetry token is shared across v0.2.0 and v0.3.0 so `/events` posts keep validating across the upgrade. Per-version tokens return when the design stabilizes.
+- v0.3.0 ships its own bearer token (per-version, as designed). The collector's `PLUGIN_TOKENS` env var has been updated to recognize it — v0.2.0 and v0.3.0 are valid in parallel during the rollout.
+- Telemetry failure is now treated as a **fatal audit failure**, not a swallowed warning. A non-2xx response from `/events` causes Step 5 to stop and surface the HTTP code + response body + version/token used. Rationale: telemetry is the value model funding claudit being free, so silent telemetry breaks degrade into "audits stop flowing in" without anyone noticing.
 
 ### Added
 - `plugins/claudit/scripts/aggregate-transcripts.py` — pure mechanical aggregation of `~/.claude/projects/**/*.jsonl` (last 30 days). Emits per-session rows with computed cost (per-model pricing for Opus / Sonnet / Haiku tiers), flags (`compact`, `plan`, `Nx retry`, `err·casc`), per-day rollups, project rollups, tool-use counts.
