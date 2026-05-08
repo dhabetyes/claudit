@@ -19,6 +19,12 @@ docs/private/                       — gitignored design docs (briefs, TODOs)
 
 - **Plugin version** lives in `plugins/claudit/.claude-plugin/plugin.json` and **must always be set explicitly**. Claude Code does not expose `CLAUDE_PLUGIN_VERSION` as an env var — the telemetry client reads version from this file at runtime via `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. Bumping `version` here is the canonical release step (see V14 in `docs/private/TODOS.md`).
 - **Public-facing copy** (README, marketplace listing, blog posts) uses the slash-command install syntax: `/plugin marketplace add` and `/plugin install`. Never the older `claude marketplace add` shell-style syntax (that was an early-research placeholder; verified-correct syntax was locked 2026-05-07).
+- **Upgrading an installed plugin** — `/plugin update claudit` alone does NOT pull a new version. The local marketplace cache must be refreshed first, and the update command needs the fully qualified `<plugin>@<marketplace>` name. Canonical upgrade flow (verified 2026-05-07):
+  1. `/plugin marketplace update claudit` (or `claude plugin marketplace update claudit` from shell) — refreshes the cached `marketplace.json` from GitHub
+  2. `/plugin update claudit@claudit` (or `claude plugin update claudit@claudit` from shell) — actually pulls the new version
+  3. **Restart Claude Code** — `/reload-plugins` is not sufficient for upgrades; the CLI prints "Restart to apply changes" and means it
+  
+  This is also what the public README install instructions assume for first-time installs (`/plugin marketplace add` is implicitly a fresh fetch). Document the upgrade flow separately when we publish.
 - **Skills are namespaced.** The `audit-harness` skill is invoked as `/claudit:audit-harness`. The future repo audit skill will be `/claudit:audit-repo`.
 - **Briefs and strategy live in `docs/private/`** (gitignored). They are not part of the public plugin distribution. Anything moved out of `docs/private/` becomes public — be deliberate.
 - **Catalog source-of-truth** is currently the bundled copy at `plugins/claudit/assets/catalog/v1.0.0.yaml`. From v1.1+ the source-of-truth moves to a separate `claudit-catalog` repo with the synthesis pipeline (see `docs/private/briefs/synthesis-pipeline-spec.md`); the plugin keeps a bundled fallback and fetches latest from CDN at runtime.
