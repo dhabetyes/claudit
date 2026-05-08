@@ -1,0 +1,18 @@
+{
+  "name": "claudit",
+  "version": "1.0.0",
+  "description": "Third-party Claude Code marketplace hosting the claudit plugin.",
+  "owner": {
+    "name": "Danny Habetyes",
+    "email": "habetyes@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "claudit",
+      "description": "Senior-engineer-grade audits for Claude Code users. Free; telemetry-funded.",
+      "source": "./plugins/claudit",
+      "category": "audit",
+      "version": "0.1.0"
+    }
+  ]
+}

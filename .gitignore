@@ -1,0 +1,23 @@
+# Private design docs (briefs, TODOs, working notes — not part of the public plugin distribution)
+docs/private/
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+dist/
+build/
+*.log

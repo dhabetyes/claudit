@@ -1,0 +1,822 @@
+# claudit capability catalog — v1.0.0 (research-grounded draft)
+#
+# This file is the data the harness audit measures against. Both band placement
+# and findings are derived from it. Lives in claudit-catalog repo when scaffolded.
+#
+# Capabilities are grounded in published Anthropic guidance, named-practitioner
+# content (Cherny, Karpathy, Krishnan), and ArXiv research where available.
+# Citations live on each capability under `citation:`. Confidence per capability:
+#   VERIFIED — multiple independent sources concur
+#   STRONG   — one good source, plausible
+#   SUGGESTIVE — worth tracking, uncertain
+#
+# Capability IDs are STABLE across versions — never rename or reuse.
+#
+# Detection sources (per V1 verification 2026-05-05):
+#   - filesystem: ~/.claude/* directory inspection (always available)
+#   - settings:   ~/.claude/settings.json + project settings
+#   - transcripts: ~/.claude/projects/*/<session>.jsonl (requires opt-in;
+#                  marks capability as requires_transcripts: true)
+#   - history:    ~/.claude/history.jsonl (always available)
+#   - token_optimizer: ~/.claude/token-optimizer/quality-cache-*.json (when present)
+
+version: "1.0.0-draft"
+released: "2026-05-05"
+editor: "danny@claudit"
+status: "DRAFT — research-grounded, pending editor sign-off. Bands defined by what good looks like in absolute terms (per literature + practitioner consensus), NOT by user-population telemetry distribution."
+
+# ============================================================================
+# BANDS — define the four-band capability curve for the harness audit.
+# Band placement = floor of capabilities met. Progression % = weighted demonstrated /
+# weighted total of next-band capabilities.
+# Architect inherits all Operator floor capabilities; Operator inherits Builder; etc.
+# ============================================================================
+
+bands:
+
+  - id: explorer
+    name: "Explorer"
+    description: "Just starting. Mostly prompting. Limited or no use of skills, agents, hooks."
+    floor_capabilities:
+      - has_claude_md_present
+      - has_used_at_least_one_tool
+      - has_at_least_one_session
+
+  - id: builder
+    name: "Builder"
+    description: "Using skills, agents, or hooks intentionally. Has a working harness shape. Verifies their own work."
+    floor_capabilities:
+      - claude_md_has_structure
+      - at_least_one_skill_used
+      - at_least_one_hook_fires
+      - non_trivial_session_count
+      - verification_scaffolding_present
+      - permission_allowlist_configured
+
+  - id: operator
+    name: "Operator"
+    description: "Manages context, caching, model routing, and compaction deliberately. Treats tokens as a budget. Uses plan mode and subagents as default reflexes."
+    floor_capabilities:
+      - cache_hit_rate_above_50
+      - claude_md_is_stable
+      - model_routing_observed
+      - hook_matchers_are_narrow
+      - tool_results_are_bounded
+      - compaction_handled_gracefully
+      - plan_mode_used_on_complex_tasks
+      - subagent_dispatch_is_routine
+      - clear_or_session_reset_discipline
+
+  - id: architect
+    name: "Architect"
+    description: "The harness is a designed system. Just-in-time context discipline, verified work, lean stable instructions, custom skills that compound, model routing as default."
+    floor_capabilities:
+      - jit_context_pattern
+      - claude_md_is_lean
+      - custom_skills_present_and_used
+      - workflow_iteration_observable
+
+# ============================================================================
+# CAPABILITIES — observable, weighted, with detection rules and citations.
+# ============================================================================
+
+capabilities:
+
+  # ----- Explorer floor -----
+
+  - id: has_claude_md_present
+    band: explorer
+    weight: 5
+    category: setup_hygiene
+    name: "Has a CLAUDE.md file"
+    detection:
+      type: filesystem_check
+      path: "~/.claude/CLAUDE.md"
+      condition: "exists AND size > 0"
+    requires_transcripts: false
+
+  - id: has_used_at_least_one_tool
+    band: explorer
+    weight: 5
+    category: workflow_patterns
+    name: "Has used at least one Claude Code tool"
+    detection:
+      type: transcript_query
+      condition: "any assistant message has content[type=tool_use] across any session"
+    requires_transcripts: true
+
+  - id: has_at_least_one_session
+    band: explorer
+    weight: 5
+    category: workflow_patterns
+    name: "Has at least one transcript session"
+    detection:
+      type: filesystem_check
+      path: "~/.claude/projects/"
+      condition: "contains at least one .jsonl file"
+    requires_transcripts: false
+
+  # ----- Builder floor -----
+
+  - id: claude_md_has_structure
+    band: builder
+    weight: 4
+    category: setup_hygiene
+    name: "CLAUDE.md is meaningfully structured"
+    detection:
+      type: filesystem_check
+      path: "~/.claude/CLAUDE.md"
+      condition: "size >= 500 bytes AND contains at least 2 markdown headings"
+    requires_transcripts: false
+    confidence: STRONG
+
+  - id: at_least_one_skill_used
+    band: builder
+    weight: 5
+    category: harness_composition
+    name: "Uses at least one skill (not just installs them)"
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: at least 3 tool_use entries with name='Skill', OR at least 3 system messages with subtype='local_command' invoking a /skill"
+    requires_transcripts: true
+    confidence: STRONG
+
+  - id: at_least_one_hook_fires
+    band: builder
+    weight: 4
+    category: harness_composition
+    name: "Has at least one hook that fires"
+    detection:
+      type: combined
+      conditions:
+        - "settings.json has at least one entry under hooks.* with a matcher and command"
+        - "across last 30 days of sessions: at least 5 system messages with subtype='stop_hook_summary'"
+    requires_transcripts: true
+    confidence: STRONG
+
+  - id: non_trivial_session_count
+    band: builder
+    weight: 3
+    category: workflow_patterns
+    name: "Has accumulated meaningful Claude Code use"
+    detection:
+      type: filesystem_check
+      path: "~/.claude/projects/"
+      condition: "total .jsonl files across all projects >= 10"
+    requires_transcripts: false
+    confidence: STRONG
+
+  - id: verification_scaffolding_present
+    band: builder
+    weight: 5
+    category: workflow_patterns
+    name: "Verifies their own work (tests, lint, typecheck after edits)"
+    why: "Per Anthropic's own best practices, this is THE single highest-leverage behavior in Claude Code. A user who runs tests after Claude makes changes catches errors before they compound and gives Claude something to learn from."
+    detection:
+      type: combined
+      conditions:
+        - "across last 30 days: at least 3 sessions where the assistant invokes a test/lint/typecheck Bash command (matching `npm test`, `pytest`, `ruff`, `eslint`, `tsc`, `cargo test`, etc.) within ~5 turns after an Edit/Write tool_use"
+        - "OR: settings.json includes a PostToolUse hook running a verifier on Write|Edit"
+    requires_transcripts: true
+    citation: "https://code.claude.com/docs/en/best-practices — quoted as the single highest-leverage practice"
+    confidence: VERIFIED
+
+  - id: permission_allowlist_configured
+    band: builder
+    weight: 2
+    category: setup_hygiene
+    name: "Pre-approved common commands via permissions allowlist"
+    why: "Each permission prompt is friction. An allowlist of common safe commands lets Claude work without interruption."
+    detection:
+      type: settings_check
+      condition: "settings.json `permissions.allow` has >= 5 entries"
+    requires_transcripts: false
+    citation: "https://code.claude.com/docs/en/best-practices — listed as a setup essential"
+    confidence: STRONG
+
+  # ----- Operator floor -----
+
+  - id: cache_hit_rate_above_50
+    band: operator
+    weight: 5
+    category: token_economics
+    name: "Maintains a useful prompt cache hit rate (≥50%)"
+    why: "At 50% hit rate, ~45% of input bill is saved (cache reads cost 0.1× base input, derived from Anthropic's published multipliers). Below ~25% the cache is actively losing money due to write premiums."
+    detection:
+      type: aggregate_threshold
+      source: transcripts
+      formula: "sum(cache_read_input_tokens) / sum(cache_read + cache_creation + input_tokens) across last 30 days >= 0.50"
+    requires_transcripts: true
+    citation: "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+    confidence: STRONG
+
+  - id: claude_md_is_stable
+    band: operator
+    weight: 4
+    category: context_management
+    name: "CLAUDE.md doesn't churn"
+    why: "Every CLAUDE.md edit invalidates the prompt cache. Stable CLAUDE.md = sustained cache hits and cost discipline."
+    detection:
+      type: combined
+      conditions:
+        - "git log of CLAUDE.md (if in a git repo) shows ≤2 commits in last 30 days, OR file mtime hasn't changed in last 14 days"
+    requires_transcripts: false
+    citation: "Derived from prompt-caching docs (cache invalidation on prefix change) + Anthropic best-practices guidance to keep CLAUDE.md stable"
+    confidence: STRONG
+
+  - id: model_routing_observed
+    band: operator
+    weight: 4
+    category: token_economics
+    name: "Routes work to the right model (not 100% Opus)"
+    why: "Sonnet trails Opus by ~1.2 points on SWE-bench Verified for ~1/5 the cost. Anthropic's own Agent SDK defaults subagents to Sonnet and reserves Opus for hardest reasoning. 100% Opus = paying 5x for ~1.5 points."
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: at least 2 distinct model values in assistant.message.model, OR at least 5 Task/Agent dispatches with subagent_type that implies a different model"
+    requires_transcripts: true
+    citation: "https://claude.com/blog/building-agents-with-the-claude-agent-sdk + SWE-bench published comparisons (Tech Insider 2026 testing summary)"
+    confidence: VERIFIED
+
+  - id: hook_matchers_are_narrow
+    band: operator
+    weight: 3
+    category: harness_composition
+    name: "Hooks fire on specific events, not everything"
+    why: "Hooks that match `.*` or fire on every prompt burn tokens and time. Narrow matchers run only when needed."
+    detection:
+      type: settings_check
+      condition: "for every hook in settings.json: matcher is not '.*' AND matcher is not '*' AND matcher length >= 3 (specific pattern)"
+    requires_transcripts: false
+    confidence: STRONG
+
+  - id: tool_results_are_bounded
+    band: operator
+    weight: 3
+    category: context_management
+    name: "Tool results don't bloat context"
+    why: "Per Anthropic's context engineering guidance, tool-result bloat is a primary failure mode. Operators shape their tools to return what's needed, no more."
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: median tool_result content length < 5000 bytes AND p95 < 50000 bytes"
+    requires_transcripts: true
+    citation: "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents"
+    confidence: STRONG  # Threshold values are best-guess; the principle is verified
+
+  - id: compaction_handled_gracefully
+    band: operator
+    weight: 2
+    category: context_management
+    name: "Compaction (when it happens) doesn't disrupt work"
+    detection:
+      type: transcript_query
+      condition: "either: zero compact_boundary events in last 30 days (sessions stay under limit), OR compact_boundary events appear but session continues with assistant messages after (graceful)"
+    requires_transcripts: true
+    observable_only_when: "any session in last 30 days has > 1500 lines"
+    confidence: STRONG
+
+  - id: plan_mode_used_on_complex_tasks
+    band: operator
+    weight: 4
+    category: workflow_patterns
+    name: "Uses plan mode on complex tasks"
+    why: "Per Boris Cherny (Claude Code creator), plan mode produces 2-3x success rates on complex tasks vs. direct execution."
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: at least 2 sessions show plan mode entered (system message with plan-mode indicator), OR user prompt patterns of 'plan, then execute' (multi-turn with explicit plan acceptance before tool_use sequence)"
+    requires_transcripts: true
+    citation: "Boris Cherny on Every podcast: https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it"
+    confidence: VERIFIED
+
+  - id: subagent_dispatch_is_routine
+    band: operator
+    weight: 4
+    category: workflow_patterns
+    name: "Dispatches subagents as a normal reflex, not a novelty"
+    why: "Per Anthropic best practices, subagents are 'one of the most powerful tools available' for keeping main context clean. Cherny describes single workflows spawning 10+ subagents."
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: at least 1 Agent or Task tool_use per 5 sessions on average"
+    requires_transcripts: true
+    citation: "https://code.claude.com/docs/en/best-practices + Cherny on Every podcast"
+    confidence: VERIFIED
+
+  - id: clear_or_session_reset_discipline
+    band: operator
+    weight: 3
+    category: context_management
+    name: "Starts fresh sessions instead of letting one run forever"
+    why: "Per Anthropic best practices, /clear discipline is the recurring anti-failure pattern. Smaller focused sessions hit compaction less, lose less context, accumulate less tool result bloat."
+    detection:
+      type: combined
+      conditions:
+        - "across last 30 days: median session length (lines) < 800"
+        - "AND total session count >= 10"
+    requires_transcripts: false
+    citation: "https://code.claude.com/docs/en/best-practices"
+    confidence: VERIFIED
+
+  # ----- Architect floor -----
+
+  - id: jit_context_pattern
+    band: architect
+    weight: 4
+    category: context_management
+    name: "Just-in-time context: fetches what's needed instead of pre-loading"
+    why: "Anthropic's central context engineering recommendation. Effective harnesses use lightweight identifiers (file paths, IDs, grep) and fetch content on demand rather than dumping it all into the prompt up front."
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: ratio of (Read + Grep + Glob) tool_uses to total assistant messages > 0.5"
+    requires_transcripts: true
+    citation: "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents"
+    confidence: STRONG
+
+  - id: claude_md_is_lean
+    band: architect
+    weight: 4
+    category: setup_hygiene
+    name: "CLAUDE.md is short and principle-based, not bloated"
+    why: "Karpathy's CLAUDE.md is ~65 lines. Anthropic best-practices say 'ruthlessly prune' — bloated CLAUDE.md tokens get ignored AND invalidate cache when edited."
+    detection:
+      type: filesystem_check
+      path: "~/.claude/CLAUDE.md"
+      condition: "size <= 5000 bytes (~150 lines max)"
+    requires_transcripts: false
+    citation: "https://miraflow.ai/blog/karpathy-claude-md-100k-github-stars-ai-coding-2026 + https://code.claude.com/docs/en/best-practices"
+    confidence: STRONG
+
+  - id: custom_skills_present_and_used
+    band: architect
+    weight: 4
+    category: harness_composition
+    name: "Has custom skills (not just plugin-shipped) and uses them"
+    why: "Custom skills are evidence of compounding engineering — codifying your own workflows so the harness improves over time. Highest signal of intentional harness design."
+    detection:
+      type: combined
+      conditions:
+        - "at least one directory under ~/.claude/skills/ that is NOT inside ~/.claude/plugins/cache/ (i.e., user-authored)"
+        - "across last 30 days: at least one tool_use of those custom skills (by name match) OR local_command invocations matching them"
+    requires_transcripts: true
+    citation: "Cherny on Every podcast: 'compounding engineering' pattern"
+    confidence: VERIFIED
+
+  - id: workflow_iteration_observable
+    band: architect
+    weight: 3
+    category: workflow_patterns
+    name: "Sessions show iterative discipline (review, retro, learn)"
+    why: "Architects don't just write code — they iterate, retro, capture learnings, run reviews. Mix of build/review/reflect tool patterns."
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: tool_use diversity score >= 0.6 (a healthy mix of Read/Edit/Write/Bash/Skill/Agent rather than 90% one tool), AND at least 2 sessions invoke review/retro/learn-style skills via local_command"
+    requires_transcripts: true
+    confidence: STRONG
+
+  # ----- Signal capabilities (strengthen band confidence, don't gate level-up) -----
+  # These contribute +1% each to progression %, capped at +5% total.
+
+  - id: cache_hit_rate_above_70
+    band: signal
+    weight: 2
+    category: token_economics
+    name: "Sustains a high prompt cache hit rate (≥70%)"
+    why: "At 70% hit rate, ~63% of input bill saved. Aspirational ceiling — no public data establishes this as a population-distribution norm; treated as a strong signal rather than a floor."
+    detection:
+      type: aggregate_threshold
+      source: transcripts
+      formula: "sum(cache_read_input_tokens) / sum(cache_read + cache_creation + input_tokens) across last 30 days >= 0.70"
+    requires_transcripts: true
+    citation: "Cost math derived from Anthropic prompt caching docs"
+    confidence: STRONG
+
+  - id: custom_agents_present_and_dispatched
+    band: signal
+    weight: 1
+    category: harness_composition
+    name: "Has custom agents and dispatches them"
+    why: "Subsumed by `subagent_dispatch_is_routine` (broader and better-cited) for floor purposes; still tracked as a quality signal."
+    detection:
+      type: combined
+      conditions:
+        - "at least one .md file in ~/.claude/agents/"
+        - "across last 30 days: at least one Agent tool_use with subagent_type matching a custom agent name"
+    requires_transcripts: true
+    confidence: STRONG
+
+  - id: hook_ordering_is_intentional
+    band: signal
+    weight: 1
+    category: harness_composition
+    name: "Hook config is composed across multiple event types"
+    detection:
+      type: settings_check
+      condition: "settings.json hooks has multiple entries across at least 2 different event types (e.g. PreToolUse + PostToolUse), AND each entry has a tool/pattern-specific matcher"
+    requires_transcripts: false
+    confidence: SUGGESTIVE  # No source identifies hook ordering as a power-user signal; tracked as quality signal only
+
+  - id: multiple_plugins_actually_used
+    band: signal
+    weight: 1
+    category: harness_composition
+    name: "Multiple plugins enabled and earning their keep"
+    why: "Cherny himself says 'my setup is surprisingly vanilla.' Plugin count is preference, not capability — but when multiple plugins ARE used intentionally, that's still a positive signal."
+    detection:
+      type: combined
+      conditions:
+        - "settings.json enabledPlugins has >= 2 entries set to true"
+        - "across last 30 days: at least 2 distinct enabled plugins surface tool calls or local_command invocations"
+    requires_transcripts: true
+    citation: "Cherny X post: https://x.com/bcherny/status/2007179832300581177"
+    confidence: STRONG  # The "demoted from Architect floor" call is verified; the signal value is preserved
+
+  - id: tool_use_is_majority_of_stops
+    band: signal
+    weight: 1
+    category: workflow_patterns
+    name: "Sessions are tool-driven, not pure chat"
+    why: "Demoted from Builder floor — high tool-use ratio can also indicate the harness is grinding, not just being effective. Tracked as quality signal."
+    detection:
+      type: transcript_query
+      condition: "across last 30 days: count(stop_reason='tool_use') / count(stop_reason in ['tool_use','end_turn']) >= 0.50"
+    requires_transcripts: true
+    confidence: SUGGESTIVE
+
+  - id: token_optimizer_present
+    band: signal
+    weight: 1
+    category: harness_composition
+    name: "Has token-optimizer plugin installed"
+    detection:
+      type: filesystem_check
+      path: "~/.claude/token-optimizer/"
+      condition: "directory exists with at least one quality-cache-*.json file"
+    requires_transcripts: false
+    confidence: SUGGESTIVE
+
+  - id: history_is_substantial
+    band: signal
+    weight: 1
+    category: workflow_patterns
+    name: "Has substantial command history"
+    detection:
+      type: filesystem_check
+      path: "~/.claude/history.jsonl"
+      condition: "wc -l >= 200"
+    requires_transcripts: false
+    confidence: SUGGESTIVE
+
+  - id: project_level_claude_md_present
+    band: signal
+    weight: 1
+    category: setup_hygiene
+    name: "Uses project-level CLAUDE.md files"
+    detection:
+      type: filesystem_check
+      condition: "at least 2 different project directories under ~/.claude/projects/ have a corresponding cwd-derived path that contains a CLAUDE.md"
+    requires_transcripts: false
+    confidence: STRONG
+
+# ============================================================================
+# FINDINGS — gaps and anti-patterns surfaced in the report.
+# Capability-tied findings fire when the linked capability is NOT met.
+# Hygiene findings are independent observations, surfaced regardless of band.
+# ============================================================================
+
+findings:
+
+  # ----- Capability-tied findings -----
+
+  - id: f_no_verification_scaffolding
+    capability: verification_scaffolding_present
+    severity: high
+    name: "You're not verifying Claude's work"
+    plain_language: "Across your last 30 days, we couldn't find sessions where you (or a hook) ran tests, lint, or typecheck after Claude made edits. Per Anthropic's own best practices, verification is the single highest-leverage thing you can do — a five-second `npm test` after Claude finishes catches errors before they compound, and gives Claude evidence to learn from on the next turn."
+    fix: "Two options: (1) Manually run your test/lint command after each Claude editing session and paste the output back. (2) Better — add a PostToolUse hook in `~/.claude/settings.json` that runs your verifier automatically on Write|Edit. Example: `bash ~/.claude/hooks/verify.sh`."
+    verify: "Next audit detects test/lint/typecheck runs in the transcript flow."
+    progression_impact: "+15% to Builder"
+
+  - id: f_no_permission_allowlist
+    capability: permission_allowlist_configured
+    severity: low
+    name: "You're approving the same prompts over and over"
+    plain_language: "Your `permissions.allow` in settings.json is empty (or has fewer than 5 entries). That means Claude has to ask permission for routine commands every time, breaking your flow. The allowlist is one-time setup that pays back forever."
+    fix: "Run `/fewer-permission-prompts` (gstack skill) to scan your transcripts for repeated approvals and generate the allowlist for you. Or manually add common safe commands to `permissions.allow` in settings.json."
+    verify: "Next audit shows allowlist with ≥5 entries and fewer permission prompts."
+    progression_impact: "+5% to Builder"
+
+  - id: f_cache_hit_rate_low
+    capability: cache_hit_rate_above_50
+    severity: high
+    name: "Your cache is barely earning its keep"
+    plain_language: "Right now, only {actual_pct}% of your input tokens are being served from cache. Cache reads cost 1/10 what fresh tokens cost — every percent of cache hit rate gained saves real money. Most often this is because something near the top of your context (CLAUDE.md, system prompts, skill definitions) keeps changing between turns."
+    fix: "Find what's churning. Run `git log --since=14.days ~/.claude/CLAUDE.md` to see if you're editing it constantly. If yes, move volatile content out of CLAUDE.md into project-level settings. If CLAUDE.md is stable, look at which skills/plugins load and whether their definitions change."
+    verify: "Run the audit again in a week. Target: cache hit rate above 50%."
+    progression_impact: "+15% to Operator"
+
+  - id: f_claude_md_churning
+    capability: claude_md_is_stable
+    severity: medium
+    name: "Your CLAUDE.md keeps changing"
+    plain_language: "Your CLAUDE.md was edited {days_since_edit} days ago. Each edit invalidates the prompt cache for everything below it — the first message in every subsequent session pays the full cache-write cost again. Stable CLAUDE.md is the foundation of cost-efficient sessions; if you're editing it weekly, you're paying for a cache that never warms up."
+    fix: "Treat CLAUDE.md as a rarely-changing base layer. If you keep editing it, what's churning belongs somewhere else — project-level CLAUDE.md (per-project), settings.json (config), or skills (workflow patterns). Aim for ≤2 commits in 30 days, OR no edits in the last 14 days."
+    verify: "Next audit shows CLAUDE.md mtime ≥14 days old, OR git history shows ≤2 changes in 30 days."
+    progression_impact: "+12% to Operator"
+
+  - id: f_no_plan_mode
+    capability: plan_mode_used_on_complex_tasks
+    severity: medium
+    name: "You're not using plan mode"
+    plain_language: "We didn't see plan mode used on any of your recent complex tasks. Per Boris Cherny (the engineer who built Claude Code), plan mode produces 2-3x success rates on complex work. The flow: ask Claude to plan first, review/correct the plan, then accept it — Claude executes against the plan instead of figuring it out as it goes."
+    fix: "Next time you have a non-trivial task (>3 files, new architecture, anything you'd describe in more than two sentences), enable plan mode before sending the prompt. Read the plan, push back on what's wrong, accept the corrected plan."
+    verify: "Next audit detects plan mode usage."
+    progression_impact: "+12% to Operator"
+
+  - id: f_no_subagent_reflex
+    capability: subagent_dispatch_is_routine
+    severity: medium
+    name: "You don't dispatch subagents"
+    plain_language: "You haven't dispatched a subagent in your recent sessions. Anthropic's own docs call subagents 'one of the most powerful tools available' for keeping your main context clean — searches, research, parallel work all run in their own context windows and report back summaries. Heavy users typically dispatch several per session."
+    fix: "Next time you need to search the codebase, audit something, or run a research task that's separable from your main thread, use the Agent tool with a relevant subagent_type. Watch how much smaller your main context stays."
+    verify: "Next audit shows ≥1 Agent dispatch per 5 sessions on average."
+    progression_impact: "+10% to Operator"
+
+  - id: f_no_session_clear_discipline
+    capability: clear_or_session_reset_discipline
+    severity: medium
+    name: "Your sessions run too long"
+    plain_language: "Your median session is {median_lines} lines. Per Anthropic's best practices, /clear discipline (starting fresh sessions between unrelated tasks) is the most consistently-cited anti-failure pattern. Long sessions hit compaction more often, lose context across compaction, and accumulate tool-result bloat."
+    fix: "Use `/clear` or `/context-save` (gstack) at natural breakpoints. Scope sessions to a single feature/task. Start fresh when the task ends, not when the context window forces you to."
+    verify: "Next audit shows median session length under 800 lines."
+    progression_impact: "+8% to Operator"
+
+  - id: f_model_routing_absent
+    capability: model_routing_observed
+    severity: medium
+    name: "You're using the most expensive model for everything"
+    plain_language: "Every assistant message in your recent sessions used the same model (likely Opus). Sonnet trails Opus by ~1.2 points on coding benchmarks for one-fifth the cost; Anthropic's own Agent SDK defaults subagents to Sonnet. 100% Opus is paying 5x for 1.5 points of capability."
+    fix: "Identify your cheapest tasks (formatting, simple lookups, structured-output transformations). Dispatch those to a Sonnet or Haiku subagent via Task. Use Sonnet as your default for most coding work; reserve Opus for the genuinely hardest reasoning."
+    verify: "Next audit shows >1 distinct model across recent sessions."
+    progression_impact: "+10% to Operator"
+
+  - id: f_hook_matchers_broad
+    capability: hook_matchers_are_narrow
+    severity: medium
+    name: "Your hooks fire more often than they need to"
+    plain_language: "One or more hooks in your settings.json use broad matchers like `.*` or `*`. That means the hook runs on every prompt or every tool call — adding latency and tokens to every interaction, even when there's nothing for the hook to do."
+    fix: "For each broad hook in settings.json, narrow the matcher to the specific tool or event it actually cares about. A format-on-save hook should match `Write|Edit`, not `.*`."
+    verify: "Next audit confirms all hook matchers are specific."
+    progression_impact: "+5% to Operator"
+
+  - id: f_tool_results_bloated
+    capability: tool_results_are_bounded
+    severity: medium
+    name: "Some tool results are eating your context"
+    plain_language: "Your median tool result is reasonable, but some are returning {p95_kb}KB or more. Per Anthropic's context engineering guidance, tool-result bloat is a primary failure mode — a handful of huge results in a session and your context is gone, which forces compaction, which costs tokens to do."
+    fix: "Identify the tool returning huge results. For Read on large files, use offset/limit. For Bash dumping logs, pipe through head/tail. For MCP tools with no pagination, ask the server for a smaller response shape."
+    verify: "Next audit shows p95 tool result < 50KB."
+    progression_impact: "+5% to Operator"
+
+  - id: f_no_jit_context
+    capability: jit_context_pattern
+    severity: medium
+    name: "You're pre-loading context instead of fetching just-in-time"
+    plain_language: "Your recent sessions show low ratios of Read/Grep/Glob tool calls relative to overall work. Anthropic's central context engineering recommendation is to fetch content on demand using lightweight identifiers (file paths, grep results, IDs) rather than dumping it all into the prompt up front. JIT context = bigger problems handled in less context."
+    fix: "Instead of pasting file contents into prompts, reference files by path and let Claude Read them. Instead of dumping documentation, let Claude grep for what it needs. Trust the agent to fetch what it needs when it needs it."
+    verify: "Next audit shows Read/Grep/Glob tool ratio above 0.5."
+    progression_impact: "+8% to Architect"
+
+  - id: f_claude_md_too_long
+    capability: claude_md_is_lean
+    severity: medium
+    name: "Your CLAUDE.md is bloated"
+    plain_language: "Your CLAUDE.md is {size_kb}KB. Karpathy's (with 100K+ GitHub stars on his work) is ~65 lines / under 5KB. Anthropic best practices explicitly say 'ruthlessly prune' — beyond a few thousand bytes, content tends to either be ignored by the model or duplicated across project-level files. Plus every byte costs tokens on every session."
+    fix: "Open CLAUDE.md and cut anything that's project-specific (move it to project-level CLAUDE.md), historical (the model doesn't need your changelog), or aspirational (rules you don't actually follow). Aim for principles-only — what you'd tell a senior engineer in three minutes about how you work."
+    verify: "Next audit shows CLAUDE.md under 5KB."
+    progression_impact: "+10% to Architect"
+
+  - id: f_no_custom_skills
+    capability: custom_skills_present_and_used
+    severity: low
+    name: "You haven't built your own skills yet"
+    plain_language: "Plugin-shipped skills are useful, but custom skills are how a harness becomes yours. They codify your workflows, your patterns, your guardrails — what Cherny calls 'compounding engineering.' Architects have a handful of custom skills they reach for constantly."
+    fix: "Pick one workflow you do regularly that isn't covered by an existing skill. Write a skill for it under `~/.claude/skills/<name>/SKILL.md`. Use it for a week."
+    verify: "Next audit shows ≥1 custom skill invoked."
+    progression_impact: "+8% to Architect"
+
+  # ----- Hygiene findings (independent of capabilities) -----
+
+  - id: h_claude_md_stale
+    severity: low
+    category: setup_hygiene
+    name: "Your CLAUDE.md hasn't been touched in months"
+    detection:
+      condition: "~/.claude/CLAUDE.md mtime older than 180 days"
+    plain_language: "You haven't updated CLAUDE.md in {days} days. Either it's perfectly tuned (nice) or it's drifted from how you actually work. Most users find old CLAUDE.md files contain instructions that no longer match their current habits."
+    fix: "Skim it. Delete what's no longer accurate. Add what you wish Claude knew."
+    verify: "—"
+
+  - id: h_broken_hook_reference
+    severity: high
+    category: setup_hygiene
+    name: "A hook references a script that doesn't exist"
+    detection:
+      condition: "settings.json hook.command references a file path that doesn't exist on disk"
+    plain_language: "Your settings.json has a hook configured to run `{path}`, but that file isn't on your machine. Every time the hook would fire, Claude Code tries and fails — silent errors, unexpected behavior."
+    fix: "Either restore the missing file at `{path}`, or remove the hook from settings.json."
+    verify: "Audit re-run confirms no broken hook references."
+
+  - id: h_plugin_sprawl
+    severity: low
+    category: harness_composition
+    name: "You have plugins enabled that you never use"
+    detection:
+      condition: "settings.json enabledPlugins has plugins for which zero tool_use or local_command invocations have appeared in the last 60 days"
+    plain_language: "You have {count} plugins enabled, but {unused_count} of them haven't surfaced any tool calls in the last 60 days. Disabled plugins don't cost tokens, but enabled-but-unused plugins still load skills and definitions into context when relevant. Cherny himself runs a 'surprisingly vanilla' setup."
+    fix: "Review the unused plugins listed below. For each: keep, disable (`/plugin disable <name>`), or uninstall (`/plugin uninstall <name>`)."
+    verify: "Next audit shows fewer enabled-but-unused plugins."
+
+  - id: h_settings_drift
+    severity: medium
+    category: setup_hygiene
+    name: "Your settings files disagree with each other"
+    detection:
+      condition: "user settings.json, project .claude/settings.json, and .claude/settings.local.json have overlapping keys with conflicting values"
+    plain_language: "You have the same setting defined in two places with different values. Claude Code resolves these in a specific order, but the result may not match your intent."
+    fix: "For each conflicting key listed below, pick one location and remove it from the others. Identity/preferences in user settings, project-specific in project settings, machine-specific in local settings."
+    verify: "Audit re-run shows no setting conflicts."
+
+  - id: h_high_permission_friction
+    severity: low
+    category: workflow_patterns
+    name: "You're approving permission prompts constantly"
+    detection:
+      condition: "across last 30 days: count of permission-mode line type changes OR AskUserQuestion tool_uses > 50"
+    plain_language: "You've hit ≥{count} permission prompts in the last 30 days. Each one is a context switch and a delay."
+    fix: "Run `/fewer-permission-prompts` (gstack) to scan transcripts for repeated approvals and generate an allowlist. Or manually add common patterns to `permissions.allow`."
+    verify: "Next audit shows fewer permission prompts."
+
+  - id: h_token_optimizer_signal_disagrees
+    severity: medium
+    category: token_economics
+    name: "Token-optimizer flagged issues we haven't surfaced"
+    detection:
+      condition: "token-optimizer quality-cache files exist AND quality score < 70 AND no equivalent claudit finding fired"
+    plain_language: "Token-optimizer reports a context quality score of {score} for recent sessions, but our analysis didn't surface a corresponding finding. Either we missed something, or token-optimizer is being noisier than warranted."
+    fix: "Open the token-optimizer dashboard (`/token-optimizer:token-dashboard`) and compare. If something looks real, file an issue against claudit so we can add a detector."
+    verify: "—"
+
+  - id: h_compaction_recurring
+    severity: medium
+    category: context_management
+    name: "Compaction keeps interrupting your sessions"
+    detection:
+      condition: "across last 30 days: ≥3 sessions with compact_boundary events"
+    plain_language: "{count} of your recent sessions hit Claude Code's compaction limit. When that happens, Claude summarizes earlier turns to free up context — losing detail. Heavy compaction usually means trying to do too much in one session."
+    fix: "Save context with `/context-save` before reaching the limit. Restart with a fresh session and use `/context-restore` if needed."
+    verify: "Next audit shows fewer sessions hitting compaction."
+
+  # ----- Findings ported from token-optimizer v5.6.5 (research-grounded) -----
+
+  - id: h_retry_churn
+    severity: high
+    category: workflow_patterns
+    name: "You're retrying the same operation after errors"
+    detection:
+      condition: "across last 30 days: ≥3 retry-churn events (same tool+input repeated within 6 turns after an is_error tool_result)"
+    plain_language: "We detected {count} cases where the same tool call was repeated within a few turns after a previous attempt failed. Retrying the same thing after an error usually means Claude (or you) is guessing at the fix instead of diagnosing it — costs tokens, costs time, and rarely succeeds without a different approach."
+    fix: "When a tool call fails, stop and read the error carefully. Diagnose the root cause before retrying. If you find yourself approving the same retry repeatedly, interrupt and ask Claude to investigate why it keeps failing instead of repeating it."
+    verify: "Next audit shows fewer retry-churn events."
+
+  - id: h_tool_error_cascade
+    severity: high
+    category: workflow_patterns
+    name: "Tool errors are cascading"
+    detection:
+      condition: "across last 30 days: ≥1 session with 4+ consecutive is_error tool_results"
+    plain_language: "{count} sessions had runs of 4+ tool errors in a row. When errors cascade, Claude is usually compounding a wrong assumption — fixing one symptom only to hit the next. Each error is a context-polluting tool result that pays for itself in tokens."
+    fix: "When you see 2-3 errors in a row from Claude, stop the session and reset. `/clear` and start fresh with a more specific prompt that names the constraints. Or run `/investigate` (gstack) to root-cause systematically before retrying."
+    verify: "Next audit shows zero error-cascade sessions."
+
+  - id: h_cache_prefix_unstable
+    severity: medium
+    category: context_management
+    name: "Your CLAUDE.md has churn-inducing content near the top"
+    detection:
+      condition: "first 60% of CLAUDE.md contains dates, timestamps, 'last updated' markers, or @import references"
+    plain_language: "We found {count} cache-invalidating patterns in the first 60% of your CLAUDE.md (e.g. timestamps, dates, 'last updated' lines, @imports). Anything dynamic above your stable content invalidates the prompt cache for everything below it on every change. This is more diagnostic than the mtime check — even if you don't actively edit CLAUDE.md, dynamic content silently churns the cache."
+    fix: "Move all date/timestamp/'last updated' content out of CLAUDE.md (or to the very bottom). Replace @import paths with inline content if the imports change between projects. Lock the top 60% to true static principles."
+    verify: "Next audit shows zero churn patterns in the first 60% of CLAUDE.md."
+
+  - id: h_wasteful_thinking
+    severity: medium
+    category: token_economics
+    name: "Extended thinking is producing more thinking than output"
+    detection:
+      condition: "across last 30 days: ≥4 turns where thinking-block character count (÷4 token estimate) exceeds 4× output tokens AND output > 50 tokens"
+    plain_language: "{count} of your recent turns spent more on extended thinking than on the actual response (4×+ ratio). Thinking tokens cost the same as output tokens. When thinking dominates with little to show, the model is over-reasoning simple decisions — usually because the prompt is ambiguous or the task isn't well-decomposed."
+    fix: "When you see Claude doing extensive thinking on small tasks, the prompt likely needs sharpening. Be more specific about constraints, decisions, and expected output shape. For genuinely simple tasks, consider routing to a model without extended thinking enabled."
+    verify: "Next audit shows fewer wasteful-thinking turns."
+
+  - id: h_output_waste
+    severity: low
+    category: token_economics
+    name: "Output is disproportionate to input on simple tool work"
+    detection:
+      condition: "across last 30 days: ≥3 turns where simple-tool work (Read/Grep/Glob/short Bash) produced output more than 3× the input"
+    plain_language: "{count} of your recent simple-tool turns generated more than 3× as much output as input. Reading a file shouldn't generate three pages of explanation — that's the model padding responses with restatements, summaries, and recommendations the user didn't ask for."
+    fix: "Add 'be concise' or 'no explanation, just the result' to prompts that ask for tool work. Or add a project CLAUDE.md rule capping verbose explanations on simple operations."
+    verify: "Next audit shows fewer output-waste turns."
+
+  - id: h_unused_skills_skill_level
+    severity: low
+    category: harness_composition
+    name: "You have skills installed that you never use"
+    detection:
+      condition: "≥5 skills installed in ~/.claude/skills/ or in plugin caches with zero invocations in last 30 days"
+    plain_language: "You have {unused_count} skills installed (out of {total_count}) that haven't been invoked in the last 30 days. Each unused skill still loads its definition into context when relevant. The plugin sprawl finding flags this at the plugin level; this is the per-skill version — useful when one plugin ships many skills you don't use."
+    fix: "Review the unused skills listed in the report. For user skills (under ~/.claude/skills/), delete the directory. For plugin-shipped skills, consider disabling the plugin if most of its skills are unused, or accept the overhead if a few skills are valuable."
+    verify: "Next audit shows fewer unused skills."
+
+# ============================================================================
+# QUEST SELECTOR PROMPT GUIDANCE — fed to the in-session subagent that picks
+# the 3-5 hero quests for the report. Not used by the deterministic scoring.
+# ============================================================================
+
+quest_selector:
+  intent: |
+    Pick the 3-5 findings from the user's audit that will most efficiently move
+    them toward the next band, weighted by progression_impact. Prioritize:
+    1. High-severity findings tied to capabilities the user is closest to demonstrating
+       (one or two more steps away from level-up)
+    2. Findings the user has not been shown in prior audits (avoid quest fatigue)
+    3. Findings with concrete, copy-pasteable fixes over abstract ones
+    Avoid:
+    - Surfacing more than one finding from the same category at the top
+    - Stacking findings that all require the same prerequisite (e.g., five token-economics
+      findings that all assume the user understands prompt caching first)
+    - Selecting findings whose fix the user has already attempted (per finding telemetry)
+
+# ============================================================================
+# SCORING FORMULA — how progression % is calculated.
+# Documented for the report's "how this score is calculated" section.
+# ============================================================================
+
+scoring:
+  band_placement: |
+    A user is placed in band B if all floor_capabilities of B are demonstrated
+    AND not all floor_capabilities of B+1 are demonstrated. Higher bands inherit
+    all floor capabilities of lower bands.
+
+  progression_to_next: |
+    For a user placed in band B, progression to B+1 is:
+      sum(weight_i * demonstrated_i) / sum(weight_i)
+    over all floor_capabilities of band B+1 (those NOT inherited from B).
+    Capabilities marked observable_only_when="..." that are not observable
+    contribute neither weight nor demonstration (excluded from both numerator
+    and denominator), so unobservable capabilities don't penalize the user.
+
+  signal_capabilities: |
+    Signal capabilities (band: signal) do not gate level-up but contribute +1%
+    each to progression % when demonstrated. Cap at +5% total signal contribution.
+
+  config_only_mode: |
+    When transcript access is denied, all capabilities with requires_transcripts=true
+    are excluded from band placement and progression %. The report displays band
+    as "config-only" and notes which capabilities couldn't be evaluated.
+
+  benchmark_layer_v2_plus: |
+    From v2+, telemetry data is surfaced as benchmark context in the report
+    ("you're at 72%, median user is at 45%, top decile at 88%") but is NEVER
+    used to define band thresholds or capability weights. Bands are absolute
+    standards grounded in research and practitioner consensus, not population
+    distributions.
+
+# ============================================================================
+# CALIBRATION & RESEARCH GAPS — to revisit in v1.1+ from telemetry.
+# ============================================================================
+
+calibration:
+  thresholds_with_known_uncertainty:
+    - capability: cache_hit_rate_above_50
+      note: "50% threshold is cost-math defensible (~45% of input bill saved). Where users actually cluster is unknown without telemetry."
+    - capability: cache_hit_rate_above_70
+      note: "70% threshold is aspirational. Demoted to signal capability until telemetry shows it's a natural breakpoint."
+    - capability: tool_results_are_bounded
+      note: "5KB median / 50KB p95 thresholds are best-guess. Anthropic confirms tool-result bloat is a failure mode but publishes no numbers."
+    - capability: clear_or_session_reset_discipline
+      note: "800-line median session length is best-guess. Heavy users with long but well-managed sessions may be misclassified."
+    - capability: subagent_dispatch_is_routine
+      note: "1 dispatch per 5 sessions is best-guess. Telemetry on heavy-user dispatch frequency could refine."
+    - capability: jit_context_pattern
+      note: "Read/Grep/Glob ratio > 0.5 is best-guess. The principle is verified; the threshold is not."
+    - capability: verification_scaffolding_present
+      note: "≥3 sessions with verification within 5 turns of edit is best-guess. Could be too strict (one verification hook fires every session) or too loose (3 in 30 days is barely meaningful)."
+
+  open_empirical_questions:
+    - "What cache hit rate distribution exists in the wild?"
+    - "What's a healthy tool result p95 in practice?"
+    - "Does context utilization above 25% measurably degrade Claude Code session outcomes specifically? (Chroma research is on raw model recall, not coding agent success.)"
+    - "Plan mode adoption distribution across the population."
+    - "Does CLAUDE.md size correlate with rule adherence? (Anthropic asserts it does; measurable from our own corpus.)"
+    - "Permission allowlist size vs. friction — is more allowlist always better, or are there diminishing returns?"
+    - "Subagent dispatch diminishing returns curve."
+    - "Input tokens per accepted code change as a 'effective use' metric (no public benchmark exists)."

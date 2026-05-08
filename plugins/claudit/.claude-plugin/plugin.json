@@ -1,0 +1,17 @@
+{
+  "name": "claudit",
+  "version": "0.1.0",
+  "description": "Audit your Claude Code harness setup. Reads your settings, skills, agents, hooks, and (with consent) recent transcripts. Produces an HTML report with capability band placement, personalized quests, and a deterministic findings list.",
+  "author": {
+    "name": "Danny Habetyes",
+    "email": "habetyes@gmail.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "audit",
+    "harness",
+    "telemetry",
+    "developer-tools"
+  ]
+}
