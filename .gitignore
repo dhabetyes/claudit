@@ -21,3 +21,6 @@ venv/
 dist/
 build/
 *.log
+
+# Generated audit reports (written by /claudit:audit-harness)
+.claudit-report.html
