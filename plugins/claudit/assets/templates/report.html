@@ -1,1197 +1,1411 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:;">
-<title>claudit — harness audit · {BAND} · {PROGRESSION_TOTAL}%</title>
-<style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; form-action https://claudit.acumen-iq.com;" />
+  <title>claudit · {BAND} · {AUDIT_DATE_DISPLAY}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter+Tight:wght@400..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+:root {
+  --paper: #F4EFE6;
+  --paper-deep: #ECE5D6;
+  --paper-deeper: #E0D8C5;
+  --ink: #1A1814;
+  --ink-soft: #4A4540;
+  --ink-mute: #7A7268;
+  --rule: #2A241D;
+  --rule-soft: rgba(42, 36, 29, 0.18);
+  --oxblood: #7A1A1F;
+  --oxblood-soft: #9C3037;
+  --gold: #C49A4F;
+  --gold-soft: #D4B077;
+  --sage: #6B7E5E;
+  --amber: #B5803B;
+  --serif: 'Fraunces', 'Iowan Old Style', serif;
+  --sans: 'Inter Tight', -apple-system, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  --max-w: 1200px;
+  --gutter: 1.5rem;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+a { color: inherit; text-decoration: none; }
+code { font-family: var(--mono); font-size: 0.92em; }
 
-  :root {
-    --ink:        #161412;
-    --ink-2:      #2a2522;
-    --ink-3:      #4a4138;
-    --paper:      #faf8f3;
-    --paper-2:    #f1ead9;
-    --paper-3:    #e6dcc4;
-    --rule:       #161412;
-    --rule-soft:  rgba(22, 20, 18, 0.14);
-    --accent:     #1e6b6f;
-    --accent-deep:#144a4d;
-    --mute:       #6f6457;
-    --warn:       #a23a2a;
-    --serif:  "Hoefler Text", "Iowan Old Style", Charter, Georgia, "Times New Roman", ui-serif, serif;
-    --mono:   "SF Mono", "JetBrains Mono", Menlo, Monaco, "Cascadia Mono", ui-monospace, monospace;
-    --sans:   -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", ui-sans-serif, sans-serif;
-  }
+/* ===== TOPBAR ===== */
+.topbar {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.5rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+.topbar-left { display: flex; align-items: baseline; gap: 0.6rem; }
+.brand {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  font-variation-settings: 'opsz' 36;
+}
+.brand-dot { color: var(--gold); }
+.topbar-sep { color: var(--ink-mute); }
+.topbar-section { color: var(--gold-soft); text-transform: uppercase; }
+.topbar-right { display: flex; gap: 1rem; color: rgba(244, 239, 230, 0.5); }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ink:        #f0e7d4;
-      --ink-2:      #d4cbb6;
-      --ink-3:      #a89d86;
-      --paper:      #0e0c0a;
-      --paper-2:    #1a1612;
-      --paper-3:    #241f18;
-      --rule:       #d4cbb6;
-      --rule-soft:  rgba(240, 231, 212, 0.16);
-      --accent:     #5cb1b5;
-      --accent-deep:#7ec8cc;
-      --mute:       #9a8e7c;
-      --warn:       #e2826e;
-    }
-  }
+/* ===== HERO STRIP ===== */
+.hero {
+  max-width: var(--max-w);
+  margin: 1.25rem auto 0;
+  padding: 0 var(--gutter);
+  display: grid;
+  grid-template-columns: minmax(280px, auto) 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+.hero-band {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 4px;
+}
+.hero-stamp {
+  position: relative;
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.stamp-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stamp-pct {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--ink);
+  font-variation-settings: 'opsz' 36;
+  position: relative;
+  z-index: 2;
+}
+.stamp-pct span {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--ink-mute);
+  vertical-align: super;
+}
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+.hero-band-name {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.8rem;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  font-variation-settings: 'opsz' 48;
+  line-height: 1.05;
+  margin-bottom: 0.3rem;
+}
+.hero-band-foot {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+.hero-band-foot em { font-family: var(--serif); font-style: italic; color: var(--ink-mute); font-variation-settings: 'opsz' 14; }
 
-  html { background: var(--paper); }
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.kpi-cell {
+  padding: 0.7rem 1rem;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+}
+.kpi-cell:last-child { border-right: none; }
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+.kpi-value {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.4rem;
+  color: var(--ink);
+  font-variation-settings: 'opsz' 36;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+.kpi-foot {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink-mute);
+  line-height: 1.3;
+}
+.kpi-cell.kpi-accent .kpi-value { color: var(--oxblood); }
+.kpi-cell.kpi-accent { background: rgba(122, 26, 31, 0.05); }
 
-  body {
-    font-family: var(--serif);
-    color: var(--ink);
-    background: var(--paper);
-    line-height: 1.55;
-    font-size: 17px;
-    font-feature-settings: "kern" 1, "liga" 1, "onum" 1, "calt" 1;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    position: relative;
-    min-height: 100vh;
-  }
+/* ===== TABS ===== */
+.tabs {
+  max-width: var(--max-w);
+  margin: 1.5rem auto 0;
+  padding: 0 var(--gutter);
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+.tab-link {
+  padding: 0.6rem 1rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+  bottom: -1px;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.tab-link:hover { color: var(--ink); background: var(--paper-deep); }
+.tab-count {
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 0.66rem;
+  font-weight: 500;
+}
+/* Active tab styling via :has() */
+body:has(#quick-wins:target) [href="#quick-wins"],
+body:has(#medium:target) [href="#medium"],
+body:has(#deep:target) [href="#deep"],
+body:has(#sessions:target) [href="#sessions"],
+body:has(#trends:target) [href="#trends"],
+body:has(#setup:target) [href="#setup"],
+body:has(#overview:target) [href="#overview"],
+body:not(:has(.tab-panel:target)) [href="#overview"] {
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--rule);
+  border-bottom-color: var(--paper);
+  font-weight: 500;
+}
+body:has(#quick-wins:target) [href="#quick-wins"] .tab-count,
+body:has(#medium:target) [href="#medium"] .tab-count,
+body:has(#deep:target) [href="#deep"] .tab-count {
+  background: var(--gold);
+  color: var(--ink);
+}
 
-  /* Subtle paper grain */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
-    mix-blend-mode: multiply;
-    opacity: 0.18;
-  }
-  @media (prefers-color-scheme: dark) {
-    body::before { mix-blend-mode: screen; opacity: 0.12; }
-  }
+/* ===== TAB PANELS ===== */
+.tab-panel {
+  display: none;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 1.5rem var(--gutter) 2rem;
+}
+.tab-panel:target { display: block; }
+body:not(:has(.tab-panel:target)) #overview { display: block; }
 
-  .page {
-    max-width: 940px;
-    margin: 0 auto;
-    padding: 60px 56px 96px;
-    position: relative;
-    z-index: 1;
-  }
+.tab-header { margin-bottom: 1.25rem; }
+.tab-blurb { font-size: 0.85rem; color: var(--ink-soft); }
+.card-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+  font-weight: 500;
+}
 
-  /* ============ MASTHEAD ============ */
-  .meta-strip {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 24px;
-    font-family: var(--sans);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: var(--mute);
-    padding-bottom: 28px;
-    border-bottom: 1px solid var(--rule-soft);
-  }
-  .meta-strip .center {
-    font-family: var(--mono);
-    text-transform: lowercase;
-    letter-spacing: 0.04em;
-    color: var(--ink-3);
-  }
-  .meta-strip .right {
-    text-align: right;
-    font-family: var(--mono);
-    text-transform: lowercase;
-    letter-spacing: 0.04em;
-    color: var(--ink-3);
-    font-variant-numeric: tabular-nums;
-  }
+/* ===== OVERVIEW TAB ===== */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1rem;
+}
+@media (max-width: 900px) { .overview-grid { grid-template-columns: 1fr; } }
+.overview-chart-card,
+.overview-quests-card,
+.overview-sessions-card,
+.overview-projects-card {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  padding: 1rem;
+}
+.overview-chart-card { grid-column: span 1; }
+.overview-quests-card { grid-row: span 2; }
+.overview-sessions-card { }
+.overview-projects-card { }
+.card-more {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--oxblood);
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 1px;
+}
+.card-more:hover { color: var(--oxblood-soft); }
 
-  .title-block {
-    margin-top: 36px;
-    display: flex;
-    align-items: flex-end;
-    gap: 28px;
-    padding-bottom: 18px;
-    flex-wrap: wrap;
-  }
-  .title {
-    font-family: var(--serif);
-    font-size: 102px;
-    font-weight: 400;
-    letter-spacing: -0.05em;
-    line-height: 0.85;
-    font-style: italic;
-    font-feature-settings: "kern" 1, "liga" 1, "swsh" 1, "salt" 1;
-    color: var(--ink);
-  }
-  .subtitle {
-    font-family: var(--sans);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.36em;
-    color: var(--ink-2);
-    font-weight: 700;
-    padding-bottom: 12px;
-    flex: 1;
-  }
-  .stamp {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    border: 1px solid var(--accent);
-    padding: 4px 10px 3px;
-    line-height: 1;
-    align-self: flex-end;
-    margin-bottom: 14px;
-  }
+.quest-compact {
+  padding: 0.7rem 0.8rem;
+  background: var(--paper);
+  border-left: 3px solid var(--ink-mute);
+  margin-bottom: 0.5rem;
+  border-radius: 2px;
+}
+.quest-compact.sev-high { border-left-color: var(--oxblood); }
+.quest-compact.sev-medium { border-left-color: var(--amber); }
+.quest-compact.sev-low { border-left-color: var(--sage); }
+.quest-compact-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--ink);
+  font-variation-settings: 'opsz' 24;
+  margin-bottom: 0.2rem;
+  line-height: 1.25;
+}
+.quest-compact-evidence {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+.quest-impact {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  background: var(--gold);
+  color: var(--ink);
+  padding: 1px 5px;
+  border-radius: 2px;
+  margin-left: 0.4rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
 
-  .double-rule {
-    border: 0;
-    height: 5px;
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-  }
+.empty-state {
+  padding: 1.5rem;
+  text-align: center;
+  font-style: italic;
+  color: var(--ink-mute);
+  font-size: 0.85rem;
+  font-family: var(--serif);
+}
 
-  /* ============ HERO ============ */
-  .hero {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 56px;
-    align-items: start;
-    margin-top: 56px;
-  }
-  .hero-badge { width: 200px; }
-  .badge-svg {
-    width: 200px;
-    height: 200px;
-    color: var(--ink);
-    display: block;
-  }
-  .badge-cap {
-    margin-top: 14px;
-    text-align: center;
-    font-family: var(--sans);
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.28em;
-    color: var(--mute);
-    font-weight: 700;
-  }
-  .badge-cap em {
-    font-style: normal;
-    color: var(--accent);
-  }
+.mini-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.mini-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--rule-soft); }
+.mini-table td:first-child { padding-left: 0; }
+.mini-cost { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+.mini-project { color: var(--ink-soft); font-style: italic; }
+.mini-msgs { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-mute); text-align: right; }
 
-  .hero-body { padding-top: 4px; }
-  .placement-label {
-    font-family: var(--sans);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.32em;
-    color: var(--mute);
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-  .band-name {
-    font-family: var(--serif);
-    font-size: 110px;
-    font-weight: 400;
-    letter-spacing: -0.045em;
-    line-height: 0.9;
-    color: var(--ink);
-    font-feature-settings: "kern" 1;
-  }
-  .band-path {
-    display: flex;
-    gap: 0;
-    margin-top: 22px;
-    font-family: var(--mono);
-    font-size: 10.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--mute);
-    border-top: 1px solid var(--rule-soft);
-    border-bottom: 1px solid var(--rule-soft);
-  }
-  .band-path > span {
-    flex: 1;
-    padding: 10px 0;
-    text-align: center;
-    border-left: 1px solid var(--rule-soft);
-    position: relative;
-  }
-  .band-path > span:first-child { border-left: 0; }
-  .band-path > span.here {
-    color: var(--ink);
-    background: var(--paper-2);
-    font-weight: 700;
-  }
-  .band-path > span.here::after {
-    content: "▲";
-    position: absolute;
-    bottom: -7px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 8px;
-    color: var(--accent);
-    background: var(--paper);
-    padding: 0 4px;
-  }
+.project-bars { display: grid; gap: 0.5rem; }
+.project-bar-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 110px) 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+.project-bar-name { color: var(--ink); font-style: italic; font-family: var(--serif); font-variation-settings: 'opsz' 14; }
+.project-bar-track {
+  background: var(--paper);
+  border: 1px solid var(--rule-soft);
+  height: 14px;
+  border-radius: 2px;
+  overflow: hidden;
+  display: block;
+}
+.project-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--oxblood), var(--gold));
+}
+.project-bar-value { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-soft); font-weight: 500; }
 
-  .takeaway {
-    font-family: var(--serif);
-    font-size: 21px;
-    line-height: 1.5;
-    margin-top: 36px;
-    color: var(--ink);
-    max-width: 600px;
-  }
-  .takeaway::first-letter {
-    font-family: var(--serif);
-    font-size: 76px;
-    line-height: 0.82;
-    float: left;
-    padding: 8px 14px 0 0;
-    color: var(--accent);
-    font-weight: 700;
-    font-feature-settings: "kern" 1;
-  }
-  .takeaway em {
-    font-style: italic;
-    color: var(--ink);
-  }
+/* ===== EFFORT/QUEST TABS ===== */
+.empty-card {
+  background: var(--paper-deep);
+  border: 1px dashed var(--rule-soft);
+  border-radius: 4px;
+}
+.quest-card {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  border-left: 3px solid var(--ink-mute);
+  border-radius: 4px;
+  margin-bottom: 0.6rem;
+  overflow: hidden;
+}
+.quest-card.sev-high { border-left-color: var(--oxblood); }
+.quest-card.sev-medium { border-left-color: var(--amber); }
+.quest-card.sev-low { border-left-color: var(--sage); }
+.quest-summary {
+  padding: 0.8rem 1rem;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+.quest-summary::-webkit-details-marker { display: none; }
+.quest-num {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-mute);
+}
+.quest-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.quest-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: var(--ink);
+  font-variation-settings: 'opsz' 24;
+  line-height: 1.3;
+}
+.quest-tags { display: flex; gap: 0.3rem; }
+.tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+.tag-sev.tag-high { background: var(--oxblood); color: var(--paper); }
+.tag-sev.tag-medium { background: var(--amber); color: var(--paper); }
+.tag-sev.tag-low { background: var(--sage); color: var(--paper); }
+.tag-impact { background: var(--gold); color: var(--ink); }
+.quest-marker {
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: var(--ink-mute);
+  font-weight: 300;
+  width: 16px;
+  text-align: center;
+  transition: transform 0.15s ease;
+}
+.quest-card[open] .quest-marker { transform: rotate(45deg); }
+.quest-body {
+  padding: 0 1rem 1rem 3rem;
+  border-top: 1px solid var(--rule-soft);
+}
+.quest-body > * { margin-top: 0.8rem; }
+.quest-evidence {
+  background: var(--paper);
+  border-left: 2px solid var(--oxblood);
+  padding: 0.5rem 0.7rem;
+}
+.evidence-label, .explain-label, .fix-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+.evidence-label { color: var(--oxblood); }
+.fix-label { color: var(--gold); }
+.evidence-text {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.quest-explain p:last-child, .quest-fix p:last-child {
+  font-size: 0.88rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.quest-verify {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--ink-mute);
+  font-variation-settings: 'opsz' 14;
+}
+.verify-label { font-weight: 600; color: var(--ink-soft); font-style: italic; }
 
-  /* ============ PROGRESSION GAUGE ============ */
-  .progression {
-    margin-top: 44px;
-    padding-top: 24px;
-    border-top: 1px solid var(--rule-soft);
-  }
-  .progression-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-family: var(--sans);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.26em;
-    color: var(--mute);
-    font-weight: 700;
-    margin-bottom: 16px;
-  }
-  .progression-meta .total {
-    font-family: var(--mono);
-    text-transform: lowercase;
-    letter-spacing: 0;
-    color: var(--ink);
-    font-size: 14px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-  .progression-meta .total b {
-    color: var(--accent);
-    font-size: 17px;
-  }
+/* ===== SESSIONS TABLE ===== */
+.session-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+}
+.session-table th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-deeper);
+}
+.session-table td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: middle;
+}
+.session-table tr:last-child td { border-bottom: none; }
+.session-table tr:hover td { background: var(--paper); }
+.col-grade { width: 40px; }
+.col-cost {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.col-msgs, .col-cache { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; color: var(--ink-soft); font-size: 0.78rem; }
+.col-flags { font-size: 0.7rem; }
+.col-model code { font-size: 0.7rem; color: var(--ink-soft); background: var(--paper); padding: 1px 4px; border-radius: 2px; }
+.col-project { color: var(--ink-soft); font-style: italic; font-family: var(--serif); font-variation-settings: 'opsz' 14; font-size: 0.85rem; }
 
-  .gauge {
-    width: 100%;
-    height: 64px;
-    display: block;
-    color: var(--mute);
-  }
-  .gauge .tick { stroke: var(--mute); opacity: 0.32; }
-  .gauge .tick.fill { stroke: var(--accent); opacity: 1; }
-  .gauge .marker { fill: var(--accent); }
-  .gauge .marker-line { stroke: var(--accent); stroke-width: 1; opacity: 0.5; }
-  .gauge text {
-    font-family: var(--mono);
-    font-size: 9px;
-    fill: var(--mute);
-    letter-spacing: 0.04em;
-  }
-  .gauge text.current { fill: var(--accent); font-weight: 700; }
+.grade {
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
+  text-align: center;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 50%;
+  background: var(--paper-deep);
+  color: var(--ink);
+  font-variation-settings: 'opsz' 24;
+}
+.grade-S { background: var(--gold); color: var(--ink); }
+.grade-A { background: var(--sage); color: var(--paper); }
+.grade-B { background: var(--paper); color: var(--ink); border: 1px solid var(--ink-mute); }
+.grade-C { background: var(--paper); color: var(--amber); border: 1px solid var(--amber); }
+.grade-D { background: var(--amber); color: var(--paper); }
+.grade-F { background: var(--oxblood); color: var(--paper); }
 
-  .progression-detail {
-    margin-top: 16px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--mute);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-  }
-  .progression-detail b { color: var(--ink); font-weight: 500; }
+.flag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  margin-right: 0.2rem;
+  border: 1px solid var(--rule-soft);
+}
+.flag-clean { color: var(--ink-mute); font-family: var(--mono); }
 
-  /* ============ MUST-HAVES ============ */
-  .musthaves {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 48px;
-    margin-top: 56px;
-    padding: 32px 0;
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-  }
-  .musthaves h4 {
-    font-family: var(--sans);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.26em;
-    color: var(--mute);
-    font-weight: 700;
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 1px solid var(--rule-soft);
-    padding-bottom: 8px;
-  }
-  .musthaves h4 .n {
-    font-family: var(--mono);
-    color: var(--ink);
-    letter-spacing: 0;
-    text-transform: none;
-    font-variant-numeric: tabular-nums;
-    font-size: 12px;
-  }
-  .musthaves ul { list-style: none; }
-  .musthaves li {
-    font-family: var(--mono);
-    font-size: 12.5px;
-    line-height: 2;
-    color: var(--ink);
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-  }
-  .musthaves .demonstrated li::before {
-    content: "✓";
-    color: var(--accent);
-    font-family: var(--sans);
-    font-size: 11px;
-    width: 12px;
-  }
-  .musthaves .missing li::before {
-    content: "✕";
-    color: var(--warn);
-    font-family: var(--sans);
-    font-size: 11px;
-    width: 12px;
-  }
+/* ===== TRENDS ===== */
+.trends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 1rem;
+}
+.trend-card {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  padding: 0.9rem;
+}
+.trend-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
 
-  /* ============ SECTION HEADERS ============ */
-  section.major { margin-top: 80px; }
-  .section-head {
-    display: flex;
-    align-items: baseline;
-    gap: 18px;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: 18px;
-    margin-bottom: 36px;
-  }
-  .section-head .section-num {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--mute);
-    letter-spacing: 0.08em;
-    font-variant-numeric: tabular-nums;
-    min-width: 60px;
-  }
-  .section-head h3 {
-    font-family: var(--sans);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.32em;
-    color: var(--ink);
-    font-weight: 700;
-    flex: 1;
-  }
-  .section-head .meta {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    color: var(--mute);
-    text-transform: lowercase;
-    letter-spacing: 0;
-    font-variant-numeric: tabular-nums;
-  }
+/* ===== CHARTS ===== */
+.chart { width: 100%; height: auto; display: block; }
+.bar-rect { fill: var(--oxblood); transition: opacity 0.12s ease; }
+.bar-rect:hover { opacity: 0.7; cursor: crosshair; }
+.bar-rect-amber { fill: var(--amber); }
+.bar-rect-sage { fill: var(--sage); }
+.axis { stroke: var(--rule-soft); stroke-width: 1; }
+.axis-ref { stroke: var(--ink-mute); stroke-width: 1; opacity: 0.4; }
+.axis-label { font-family: var(--mono); font-size: 9px; fill: var(--ink-mute); }
+.line-stroke { fill: none; stroke: var(--gold); stroke-width: 1.5; }
+.line-dot { fill: var(--gold); stroke: var(--paper-deep); stroke-width: 1; transition: r 0.12s ease; }
+.line-dot:hover { r: 4; cursor: crosshair; }
 
-  /* ============ VITALS ============ */
-  .vitals {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border-top: 1px solid var(--rule);
-    border-left: 1px solid var(--rule);
-  }
-  .vital {
-    border-right: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-    padding: 22px 22px 24px;
-    position: relative;
-    background: var(--paper);
-  }
-  .vital-label {
-    font-family: var(--sans);
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: var(--mute);
-    font-weight: 700;
-    margin-bottom: 14px;
-  }
-  .vital-value {
-    font-family: var(--mono);
-    font-size: 34px;
-    font-weight: 500;
-    color: var(--ink);
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-  }
-  .vital-value .unit {
-    font-size: 13px;
-    color: var(--mute);
-    margin-left: 4px;
-    letter-spacing: 0.02em;
-    font-weight: 400;
-  }
-  .vital.accent .vital-value { color: var(--accent); }
-  .vital.warn  .vital-value { color: var(--warn);   }
-  .vital-note {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--mute);
-    margin-top: 10px;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-  }
+/* ===== SETUP ===== */
+.startup-bar {
+  display: flex;
+  height: 28px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: var(--paper-deep);
+}
+.startup-segment { height: 100%; transition: opacity 0.12s ease; }
+.startup-segment:hover { opacity: 0.7; }
+.startup-segment[data-idx="0"] { background: var(--oxblood); }
+.startup-segment[data-idx="1"] { background: var(--amber); }
+.startup-segment[data-idx="2"] { background: var(--gold); }
+.startup-segment[data-idx="3"] { background: var(--sage); }
+.startup-segment[data-idx="4"] { background: var(--ink-soft); }
+.startup-segment[data-idx="5"] { background: var(--oxblood-soft); }
+.startup-segment[data-idx="6"] { background: var(--ink-mute); }
 
-  /* ============ QUESTS ============ */
-  .quest {
-    display: grid;
-    grid-template-columns: 80px 1fr;
-    gap: 28px;
-    padding: 36px 0;
-    border-bottom: 1px solid var(--rule-soft);
-  }
-  .quest:last-child { border-bottom: 0; }
-  .quest-num {
-    font-family: var(--serif);
-    font-size: 56px;
-    color: var(--ink-3);
-    font-style: italic;
-    line-height: 0.9;
-    text-align: right;
-    padding-top: 4px;
-    font-feature-settings: "smcp" 1;
-    letter-spacing: -0.01em;
-  }
-  .quest-title {
-    font-family: var(--serif);
-    font-size: 28px;
-    font-weight: 400;
-    letter-spacing: -0.018em;
-    color: var(--ink);
-    line-height: 1.18;
-    margin-bottom: 8px;
-  }
-  .quest-impact {
-    display: inline-block;
-    font-family: var(--mono);
-    font-size: 10.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    padding: 3px 9px 2px;
-    margin-bottom: 18px;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-  .quest-impact.neutral { color: var(--mute); border-color: var(--mute); }
-  .quest-prose {
-    font-family: var(--serif);
-    font-size: 16px;
-    line-height: 1.62;
-    color: var(--ink);
-    margin-bottom: 18px;
-    max-width: 640px;
-  }
-  .quest-prose code {
-    font-family: var(--mono);
-    font-size: 13px;
-    background: var(--paper-2);
-    padding: 1px 5px;
-    border-radius: 2px;
-  }
-  .quest-prose em { font-style: italic; }
-  .quest-fix {
-    font-family: var(--mono);
-    font-size: 12.5px;
-    line-height: 1.7;
-    background: var(--paper-2);
-    border-left: 2px solid var(--accent);
-    padding: 16px 20px;
-    color: var(--ink);
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
+.legend-list { list-style: none; display: grid; gap: 0.25rem; }
+.legend-item {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--rule-soft);
+  font-size: 0.85rem;
+}
+.legend-swatch { width: 12px; height: 12px; border-radius: 2px; }
+.legend-swatch[data-idx="0"] { background: var(--oxblood); }
+.legend-swatch[data-idx="1"] { background: var(--amber); }
+.legend-swatch[data-idx="2"] { background: var(--gold); }
+.legend-swatch[data-idx="3"] { background: var(--sage); }
+.legend-swatch[data-idx="4"] { background: var(--ink-soft); }
+.legend-swatch[data-idx="5"] { background: var(--oxblood-soft); }
+.legend-swatch[data-idx="6"] { background: var(--ink-mute); }
+.legend-tokens, .legend-pct { font-family: var(--mono); color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 0.78rem; }
 
-  /* ============ FINDINGS ============ */
-  .severity-band {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: 36px;
-    margin-bottom: 8px;
-  }
-  .severity-band:first-of-type { margin-top: 0; }
-  .severity-band .label {
-    font-family: var(--sans);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.34em;
-    font-weight: 700;
-    padding: 5px 11px 4px;
-    line-height: 1;
-  }
-  .severity-band.high .label   { background: var(--warn); color: var(--paper); }
-  .severity-band.medium .label { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 4px 10px 3px; }
-  .severity-band.low .label    { background: transparent; color: var(--mute); border: 1px solid var(--mute); padding: 4px 10px 3px; }
-  .severity-band .rule {
-    flex: 1;
-    height: 1px;
-    background: var(--rule-soft);
-  }
-  .severity-band .count {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    color: var(--mute);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-  }
+.setup-inventory { margin-top: 2rem; }
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.inventory-stat {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  padding: 0.8rem 1rem;
+}
+.inv-value {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1;
+  font-variation-settings: 'opsz' 36;
+  margin-bottom: 0.2rem;
+}
+.inv-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.inventory-details {
+  background: var(--paper-deep);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  padding: 0.6rem 0.9rem;
+}
+.inventory-details summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0;
+}
+.inventory-list {
+  list-style: none;
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.2rem;
+}
+.inventory-list li code {
+  background: var(--paper);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
 
-  details.finding {
-    border-bottom: 1px solid var(--rule-soft);
-  }
-  details.finding > summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 18px 0;
-    display: grid;
-    grid-template-columns: 18px 1fr auto;
-    gap: 12px;
-    align-items: baseline;
-    font-family: var(--serif);
-    font-size: 17px;
-    color: var(--ink);
-    transition: padding-left 0.16s ease;
-  }
-  details.finding > summary::-webkit-details-marker { display: none; }
-  details.finding > summary::marker { display: none; }
-  details.finding > summary:hover { padding-left: 4px; }
-  details.finding > summary .marker-glyph {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--accent);
-    line-height: 1;
-    width: 14px;
-  }
-  details.finding > summary .marker-glyph::before { content: "+"; }
-  details.finding[open] > summary .marker-glyph::before { content: "−"; }
-  details.finding > summary .finding-id {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    color: var(--mute);
-    letter-spacing: 0.02em;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-  details.finding > summary .finding-id .sep { color: var(--ink-3); margin: 0 6px; }
-  details.finding > summary .finding-id b { color: var(--ink); font-weight: 500; }
+/* ===== EMAIL CAPTURE ===== */
+.capture {
+  max-width: var(--max-w);
+  margin: 2rem auto 1.5rem;
+  padding: 0 var(--gutter);
+}
+.capture-inner {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 1.5rem 2rem;
+  border-radius: 4px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+@media (max-width: 760px) { .capture-inner { grid-template-columns: 1fr; padding: 1.25rem 1.5rem; } }
+.capture-text .card-eyebrow { color: var(--gold); }
+.capture-headline {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+  margin-bottom: 0.5rem;
+  font-variation-settings: 'opsz' 36;
+}
+.capture-prose {
+  font-size: 0.85rem;
+  color: rgba(244, 239, 230, 0.8);
+  line-height: 1.5;
+  margin-bottom: 0.6rem;
+}
+.capture-disclosure {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: rgba(244, 239, 230, 0.5);
+  line-height: 1.5;
+}
+.capture-disclosure code { background: rgba(244, 239, 230, 0.1); padding: 1px 4px; border-radius: 2px; color: var(--gold-soft); }
 
-  .finding-body {
-    padding: 4px 0 26px 30px;
-  }
-  .finding-body p {
-    font-family: var(--serif);
-    font-size: 15.5px;
-    line-height: 1.62;
-    margin-bottom: 14px;
-    color: var(--ink);
-    max-width: 640px;
-  }
-  .finding-body p code, .finding-body .fix code {
-    font-family: var(--mono);
-    font-size: 12.5px;
-    background: var(--paper-2);
-    padding: 1px 5px;
-    border-radius: 2px;
-  }
-  .finding-body .fix {
-    border-left: 2px solid var(--mute);
-    padding-left: 16px;
-    margin-top: 14px;
-    color: var(--ink-2);
-    font-size: 15px;
-    line-height: 1.6;
-    max-width: 640px;
-  }
-  .finding-body .fix strong {
-    font-family: var(--sans);
-    font-size: 9.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.28em;
-    color: var(--mute);
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 700;
-  }
-  .finding-body .measured {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--mute);
-    background: var(--paper-2);
-    padding: 7px 12px;
-    margin-top: 16px;
-    display: inline-block;
-    font-variant-numeric: tabular-nums;
-  }
-  .finding-body .measured b { color: var(--ink); font-weight: 500; }
+.capture-form { display: flex; flex-direction: column; }
+.capture-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  margin-bottom: 0.3rem;
+}
+.capture-row { display: flex; gap: 0; }
+.capture-input {
+  flex: 1;
+  background: var(--paper);
+  border: 1px solid var(--paper);
+  color: var(--ink);
+  padding: 0.55rem 0.8rem;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  border-radius: 3px 0 0 3px;
+  outline: none;
+}
+.capture-input:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(196, 154, 79, 0.3); }
+.capture-button {
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  padding: 0.55rem 1.2rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border-radius: 0 3px 3px 0;
+  transition: background 0.12s ease;
+}
+.capture-button:hover { background: var(--gold-soft); }
+.capture-foot {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(244, 239, 230, 0.4);
+  margin-top: 0.4rem;
+}
+.capture-foot code { color: var(--gold-soft); background: transparent; padding: 0; }
 
-  /* ============ CLEAN ============ */
-  details.clean {
-    margin-top: 0;
-    padding: 24px 28px;
-    background: var(--paper-2);
-    border-left: 2px solid var(--accent);
-  }
-  details.clean > summary {
-    cursor: pointer;
-    list-style: none;
-    font-family: var(--sans);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.26em;
-    color: var(--ink);
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  details.clean > summary::-webkit-details-marker { display: none; }
-  details.clean > summary::before {
-    content: "▸";
-    color: var(--accent);
-    font-size: 11px;
-    transition: transform 0.18s ease;
-    display: inline-block;
-  }
-  details.clean[open] > summary::before { transform: rotate(90deg); }
-  details.clean .clean-list {
-    list-style: none;
-    margin-top: 22px;
-    columns: 2;
-    column-gap: 32px;
-  }
-  details.clean .clean-list li {
-    font-family: var(--mono);
-    font-size: 11.5px;
-    line-height: 2;
-    color: var(--ink-2);
-    break-inside: avoid;
-    font-variant-numeric: tabular-nums;
-  }
-  details.clean .clean-list li b {
-    color: var(--ink);
-    font-weight: 500;
-  }
-  details.clean .clean-list li .ok {
-    color: var(--accent);
-    font-family: var(--sans);
-    font-size: 10px;
-    margin-right: 6px;
-  }
+/* ===== FOOTER ===== */
+.footer {
+  max-width: var(--max-w);
+  margin: 1rem auto 2rem;
+  padding: 0.75rem var(--gutter);
+  border-top: 1px solid var(--rule-soft);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-mute);
+}
+.footer-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; }
+.footer-row code { color: var(--ink-soft); }
+.footer-note { line-height: 1.5; padding-top: 0.3rem; }
 
-  /* ============ READING ============ */
-  ol.reading { list-style: none; counter-reset: r; }
-  ol.reading li {
-    counter-increment: r;
-    padding: 22px 0;
-    border-bottom: 1px solid var(--rule-soft);
-    display: grid;
-    grid-template-columns: 44px 1fr;
-    gap: 18px;
-    align-items: baseline;
-  }
-  ol.reading li:last-child { border-bottom: 0; }
-  ol.reading li::before {
-    content: counter(r, decimal-leading-zero);
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--mute);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.05em;
-  }
-  ol.reading a {
-    color: var(--ink);
-    text-decoration: none;
-    font-family: var(--serif);
-    font-size: 18px;
-    border-bottom: 1px solid var(--accent);
-    padding-bottom: 1px;
-    line-height: 1.3;
-    display: inline-block;
-  }
-  ol.reading a:hover { color: var(--accent); }
-  ol.reading .annot {
-    display: block;
-    font-family: var(--sans);
-    font-size: 12.5px;
-    color: var(--mute);
-    margin-top: 6px;
-    line-height: 1.5;
-  }
+/* ===== DRILL-DOWN PANELS ===== */
+.drilldown {
+  margin-top: 0.8rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--paper);
+  border: 1px solid var(--rule-soft);
+  border-radius: 3px;
+}
+.drilldown-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.drilldown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.drilldown-table th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.drilldown-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--rule-soft);
+  color: var(--ink);
+  vertical-align: middle;
+}
+.drilldown-table tr:last-child td { border-bottom: none; }
+.drilldown-table .num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); }
+.drilldown-table th.num { text-align: right; }
+.drilldown-table code { background: var(--paper-deep); padding: 1px 4px; border-radius: 2px; font-size: 0.72rem; }
+.drilldown-table tr.dead-row { opacity: 0.55; }
+.drilldown-table tr.dead-row td:first-child::before { content: "✕ "; color: var(--ink-mute); }
 
-  /* ============ CTA ============ */
-  .cta {
-    margin-top: 80px;
-    padding: 38px 36px 32px;
-    border: 1px solid var(--rule);
-    background: var(--paper-2);
-    position: relative;
-  }
-  .cta::before {
-    content: "✻";
-    position: absolute;
-    top: -14px;
-    left: 32px;
-    background: var(--paper);
-    width: 28px;
-    text-align: center;
-    color: var(--accent);
-    font-size: 18px;
-    line-height: 1;
-  }
-  .cta h4 {
-    font-family: var(--serif);
-    font-size: 24px;
-    font-weight: 400;
-    letter-spacing: -0.012em;
-    margin-bottom: 8px;
-    color: var(--ink);
-    font-style: italic;
-  }
-  .cta p {
-    font-family: var(--serif);
-    font-size: 15px;
-    color: var(--ink-2);
-    margin-bottom: 22px;
-    line-height: 1.55;
-    max-width: 560px;
-  }
-  form {
-    display: flex;
-    gap: 8px;
-    align-items: stretch;
-    flex-wrap: wrap;
-  }
-  form input[type="email"] {
-    flex: 1;
-    min-width: 240px;
-    padding: 14px 16px;
-    border: 1px solid var(--rule);
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--mono);
-    font-size: 13px;
-    outline: none;
-  }
-  form input[type="email"]:focus {
-    border-color: var(--accent);
-    outline: 2px solid var(--accent);
-    outline-offset: -1px;
-  }
-  form button {
-    padding: 14px 22px;
-    background: var(--ink);
-    color: var(--paper);
-    border: 1px solid var(--ink);
-    font-family: var(--sans);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.22em;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  form button:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--paper);
-  }
+.drilldown-list {
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+.drilldown-list.inline-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.drilldown-list li code {
+  background: var(--paper-deep);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  display: inline-block;
+}
 
-  /* ============ FOOTER ============ */
-  footer {
-    margin-top: 60px;
-    padding-top: 28px;
-    border-top: 1px solid var(--rule-soft);
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 24px;
-    font-family: var(--mono);
-    font-size: 10.5px;
-    color: var(--mute);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-  }
-  footer .colophon {
-    text-align: center;
-    font-family: var(--serif);
-    font-style: italic;
-    text-transform: none;
-    letter-spacing: 0;
-    font-size: 13px;
-    color: var(--ink-3);
-  }
-  footer .right { text-align: right; }
+.bar-list {
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+.bar-list-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 140px) 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+.bar-list-name code { background: var(--paper-deep); padding: 1px 5px; border-radius: 2px; font-size: 0.72rem; }
+.bar-list-track {
+  background: var(--paper-deep);
+  height: 12px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-list-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--oxblood));
+}
+.bar-list-value {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
 
-  /* ============ RESPONSIVE ============ */
-  @media (max-width: 760px) {
-    .page { padding: 36px 24px 64px; }
-    .meta-strip { grid-template-columns: 1fr; gap: 6px; }
-    .meta-strip .center, .meta-strip .right { text-align: left; }
-    .title { font-size: 64px; }
-    .subtitle { font-size: 10px; padding-bottom: 8px; }
-    .stamp { margin-bottom: 6px; }
-    .hero { grid-template-columns: 1fr; gap: 32px; }
-    .hero-badge { width: 140px; }
-    .badge-svg { width: 140px; height: 140px; }
-    .badge-cap { width: 140px; }
-    .band-name { font-size: 64px; }
-    .band-path { font-size: 9px; }
-    .band-path > span { padding: 8px 0; }
-    .takeaway { font-size: 18px; }
-    .takeaway::first-letter { font-size: 56px; }
-    .vitals { grid-template-columns: repeat(2, 1fr); }
-    .musthaves { grid-template-columns: 1fr; gap: 24px; padding: 24px 0; }
-    .quest { grid-template-columns: 48px 1fr; gap: 16px; padding: 28px 0; }
-    .quest-num { font-size: 36px; }
-    .quest-title { font-size: 22px; }
-    details.finding > summary {
-      grid-template-columns: 18px 1fr;
-      gap: 8px;
-    }
-    details.finding > summary .finding-id {
-      grid-column: 2;
-      text-align: left;
-      margin-top: 4px;
-    }
-    details.clean .clean-list { columns: 1; }
-    footer { grid-template-columns: 1fr; gap: 8px; }
-    footer .colophon, footer .right { text-align: left; }
-  }
+/* ===== SORTABLE TABLE HEADERS ===== */
+.session-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 1.4rem;
+}
+.session-table th.sortable::after {
+  content: "↕";
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+.session-table th.sortable[data-dir="asc"]::after { content: "▲"; opacity: 1; color: var(--oxblood); }
+.session-table th.sortable[data-dir="desc"]::after { content: "▼"; opacity: 1; color: var(--oxblood); }
+.session-table th.sortable:hover { color: var(--ink); background: var(--paper); }
 
-  ::selection { background: var(--accent); color: var(--paper); }
+/* ===== TRENDS · run history + token econ ===== */
+.history-card { grid-column: 1 / -1; margin-bottom: 1rem; }
+.history-deltas {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.history-since {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--ink-mute);
+  font-variation-settings: 'opsz' 14;
+  margin-right: 0.5rem;
+}
+.delta {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.delta-up { background: rgba(107, 126, 94, 0.15); color: var(--sage); }
+.delta-down { background: rgba(122, 26, 31, 0.1); color: var(--oxblood); }
+.delta-flat { background: var(--paper); color: var(--ink-mute); }
+
+.token-econ-card { grid-column: 1 / -1; margin-bottom: 1rem; }
+.econ-bar {
+  display: flex;
+  height: 22px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--paper);
+  margin: 0.5rem 0 0.8rem;
+}
+.econ-segment { height: 100%; transition: opacity 0.12s ease; }
+.econ-segment:hover { opacity: 0.7; cursor: crosshair; }
+.econ-legend {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.4rem;
+}
+.econ-legend li {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.82rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed var(--rule-soft);
+}
+.econ-swatch { width: 12px; height: 12px; border-radius: 2px; }
+.econ-name { color: var(--ink); }
+.econ-tokens, .econ-pct {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* New session column header */
+.col-tokens { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+
+@media print {
+  .topbar { background: var(--paper-deeper); color: var(--ink); }
+  .capture-inner { background: var(--paper-deep); color: var(--ink); }
+  .capture-headline, .capture-prose { color: var(--ink); }
+  .tabs, .tab-link { display: none; }
+  .tab-panel { display: block !important; page-break-before: auto; }
+  script { display: none; }
+}
 </style>
 </head>
 <body>
-
-<div class="page">
-
-<!-- ════════════════════ MASTHEAD ════════════════════ -->
-<header>
-  <div class="meta-strip">
-    <span>Vol. I · No. 1 · Personal harness audit</span>
-    <span class="center">plugin v{PLUGIN_VERSION} · catalog {CATALOG_VERSION}</span>
-    <span class="right">{AUDIT_DATE} · {AUDIT_TIME}</span>
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="brand">claudit<span class="brand-dot">.</span></span>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-section">harness audit</span>
   </div>
-  <div class="title-block">
-    <h1 class="title">claudit</h1>
-    <span class="subtitle">— harness audit</span>
-    <span class="stamp">filed</span>
+  <div class="topbar-right">
+    <span class="topbar-meta">№ {RUN_NUMBER}</span>
+    <span class="topbar-meta">{AUDIT_DATE_DISPLAY}</span>
+    <span class="topbar-meta">catalog v{CATALOG_VERSION}</span>
+    <span class="topbar-meta">{RUN_DURATION}</span>
   </div>
-  <hr class="double-rule">
 </header>
-
-<!-- ════════════════════ HERO ════════════════════ -->
 <section class="hero">
-  <div class="hero-badge">
-    <svg class="badge-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-label="{BAND} band seal">
-      <!-- Outer guidance rings -->
-      <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.6"/>
-      <circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" stroke-width="1.2"/>
-      <circle cx="100" cy="100" r="74" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
-
-      <!-- Tick marks at every 15° -->
-      <g stroke="currentColor" stroke-width="0.8">
-        <line x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(15 100 100)"  x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(30 100 100)"  x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(45 100 100)"  x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(60 100 100)"  x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(75 100 100)"  x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(90 100 100)"  x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(105 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(120 100 100)" x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(135 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(150 100 100)" x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(165 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(180 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(195 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(210 100 100)" x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(225 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(240 100 100)" x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(255 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(270 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(285 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(300 100 100)" x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(315 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-        <line transform="rotate(330 100 100)" x1="100" y1="4" x2="100" y2="10"/>
-        <line transform="rotate(345 100 100)" x1="100" y1="4" x2="100" y2="14"/>
-      </g>
-
-      <!-- Octagon -->
-      <polygon points="100,28 150.9,49.1 172,100 150.9,150.9 100,172 49.1,150.9 28,100 49.1,49.1"
-               fill="none" stroke="currentColor" stroke-width="1.4"/>
-      <polygon points="100,38 144.5,55.5 162,100 144.5,144.5 100,162 55.5,144.5 38,100 55.5,55.5"
-               fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.45"/>
-
-      <!-- Center letter -->
-      <text x="100" y="124" text-anchor="middle"
-            font-family='Hoefler Text, "Iowan Old Style", Charter, Georgia, serif'
-            font-size="78" font-style="italic" font-weight="400" fill="currentColor"
-            letter-spacing="-2">{BAND_LETTER}</text>
-
-      <!-- Roman numeral -->
-      <text x="100" y="146" text-anchor="middle"
-            font-family='SF Mono, Menlo, monospace'
-            font-size="8" letter-spacing="3" fill="currentColor" opacity="0.5">{BAND_OF_TOTAL}</text>
-
-      <!-- Bottom plate -->
-      <line x1="60" y1="180" x2="140" y2="180" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
-      <text x="100" y="194" text-anchor="middle"
-            font-family='SF Mono, Menlo, monospace'
-            font-size="7" letter-spacing="2.5" fill="currentColor" opacity="0.7">CLAUDIT · MMXXVI</text>
-    </svg>
-    <p class="badge-cap">Placement seal · <em>{BAND}</em></p>
-  </div>
-
-  <div class="hero-body">
-    <div class="placement-label">You are placed at</div>
-    <h2 class="band-name">{BAND}.</h2>
-
-    <div class="band-path">
-      <!-- CLAUDIT:BAND_PATH -->
-      <span class="{BAND_PATH_CLASS}">{BAND_PATH_NUMERAL} — {BAND_PATH_NAME}</span>
-      <!-- /CLAUDIT:BAND_PATH -->
-    </div>
-
-    <p class="takeaway">{TAKEAWAY}</p>
-
-    <div class="progression">
-      <div class="progression-meta">
-        <span>Progression to {NEXT_BAND}</span>
-        <span class="total"><b>{PROGRESSION_TOTAL}%</b> &nbsp;total</span>
-      </div>
-
-      <svg class="gauge" viewBox="0 0 640 64" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-label="Progression gauge: {PROGRESSION_TOTAL} percent">
-        <!-- Top numeric scale -->
-        <text x="20" y="10" text-anchor="start">0</text>
-        <text x="167" y="10" text-anchor="middle">25</text>
-        <text x="314" y="10" text-anchor="middle">50</text>
-        <text x="461" y="10" text-anchor="middle">75</text>
-        <text x="608" y="10" text-anchor="end">100</text>
-
-        <!-- CLAUDIT:GAUGE_DYNAMIC -->
+  <div class="hero-band">
+    <div class="hero-stamp" style="--progress: {PROGRESSION_INT};">
+      <svg viewBox="0 0 80 80" class="stamp-ring-svg" aria-hidden="true">
+        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(42,36,29,0.15)" stroke-width="3" />
+        <circle cx="40" cy="40" r="36" fill="none" stroke="var(--gold)" stroke-width="3"
+          stroke-dasharray="226.19" stroke-dashoffset="{STAMP_DASHOFFSET}"
+          transform="rotate(-90 40 40)" stroke-linecap="round" />
       </svg>
-
-      <p class="progression-detail">
-        <b>{PROGRESSION_FLOOR}%</b> floor &nbsp;·&nbsp; <b>+{SIGNAL_BONUS}%</b> signal bonus &nbsp;·&nbsp; <b>{MUST_HAVES_DEMO_NUM}</b> of <b>{MUST_HAVES_TOTAL_NUM}</b> {NEXT_BAND}-tier must-haves demonstrated
-      </p>
+      <span class="stamp-pct">{PROGRESSION_INT}<span>%</span></span>
+    </div>
+    <div class="hero-band-text">
+      <p class="hero-eyebrow">CURRENT BAND</p>
+      <h1 class="hero-band-name">{BAND}</h1>
+      <p class="hero-band-foot">{PROGRESSION_INT}% to {NEXT_BAND} · <em>{BAND_TAGLINE}</em></p>
+    </div>
+  </div>
+  <div class="kpi-strip">
+    <!-- CLAUDIT:KPI -->
+    <div class="kpi-cell{KPI_CLASS}">
+      <p class="kpi-label">{KPI_LABEL}</p>
+      <p class="kpi-value">{KPI_VALUE}</p>
+      <p class="kpi-foot">{KPI_FOOT}</p>
+    </div>
+    <!-- /CLAUDIT:KPI -->
+  </div>
+</section>
+<nav class="tabs">
+    <a href="#overview" class="tab-link" data-tab="overview">
+      <span class="tab-label">Overview</span>
+    </a>
+    <a href="#quick-wins" class="tab-link" data-tab="quick-wins">
+      <span class="tab-label">Quick wins</span><span class="tab-count">{COUNT_QUICK_WINS}</span>
+    </a>
+    <a href="#medium" class="tab-link" data-tab="medium">
+      <span class="tab-label">Medium</span><span class="tab-count">{COUNT_MEDIUM}</span>
+    </a>
+    <a href="#deep" class="tab-link" data-tab="deep">
+      <span class="tab-label">Deep work</span><span class="tab-count">{COUNT_DEEP}</span>
+    </a>
+    <a href="#sessions" class="tab-link" data-tab="sessions">
+      <span class="tab-label">Sessions</span><span class="tab-count">{COUNT_SESSIONS}</span>
+    </a>
+    <a href="#trends" class="tab-link" data-tab="trends">
+      <span class="tab-label">Trends</span>
+    </a>
+    <a href="#setup" class="tab-link" data-tab="setup">
+      <span class="tab-label">Setup</span>
+    </a>
+  </nav>
+<section id="overview" class="tab-panel tab-default">
+  <div class="overview-grid">
+    <div class="overview-chart-card">
+      <p class="card-eyebrow">SPEND, LAST 30 DAYS</p>
+      <svg viewBox="0 0 560 140" class="chart" role="img" aria-label="Daily spend over last 30 days">
+    <line x1="38" y1="118" x2="552" y2="118" class="axis" />
+    <text x="34" y="16" class="axis-label" text-anchor="end">{SPEND_CHART_MAX}</text>
+    <text x="34" y="118" class="axis-label" text-anchor="end">$0</text>
+    <text x="38" y="136" class="axis-label">{SPEND_CHART_START}</text>
+    <text x="552" y="136" class="axis-label" text-anchor="end">{SPEND_CHART_END}</text>
+    <!-- CLAUDIT:SPEND_CHART_BARS -->
+  </svg>
+    </div>
+    <div class="overview-quests-card">
+      <p class="card-eyebrow">TOP QUESTS</p>
+      <!-- CLAUDIT:TOP_QUEST -->
+      <div class="quest-compact sev-{SEVERITY}">
+        <p class="quest-compact-title">{TITLE}<span class="quest-impact">{IMPACT}</span></p>
+        <p class="quest-compact-evidence">{EVIDENCE}</p>
+      </div>
+      <!-- /CLAUDIT:TOP_QUEST -->
+      <a class="card-more" href="#quick-wins">See all {COUNT_QUICK_WINS} top quests →</a>
+    </div>
+    <div class="overview-sessions-card">
+      <p class="card-eyebrow">TOP COSTLY SESSIONS</p>
+      <table class="mini-table">
+        <tbody>
+          <!-- CLAUDIT:TOP_SESSION -->
+          <tr>
+            <td><span class="grade grade-{GRADE}">{GRADE}</span></td>
+            <td class="mini-cost">{COST}</td>
+            <td class="mini-project">{PROJECT}</td>
+            <td class="mini-msgs">{MSGS} msgs</td>
+          </tr>
+          <!-- /CLAUDIT:TOP_SESSION -->
+        </tbody>
+      </table>
+      <a class="card-more" href="#sessions">See all {COUNT_SESSIONS} sessions →</a>
+    </div>
+    <div class="overview-projects-card">
+      <p class="card-eyebrow">SPEND BY PROJECT</p>
+      <div class="project-bars">
+    <!-- CLAUDIT:PROJECT_BAR -->
+    <div class="project-bar-row">
+      <span class="project-bar-name">{NAME}</span>
+      <span class="project-bar-track"><span class="project-bar-fill" style="width: {PCT}%;"></span></span>
+      <span class="project-bar-value">{VALUE}</span>
+    </div>
+    <!-- /CLAUDIT:PROJECT_BAR -->
+  </div>
     </div>
   </div>
 </section>
-
-<!-- ════════════════════ MUST-HAVES ════════════════════ -->
-<section class="musthaves">
-  <div class="demonstrated">
-    <h4>Demonstrated <span class="n">{MUST_HAVES_DEMO_PADDED}</span></h4>
-    <ul>
-      <!-- CLAUDIT:MUST_HAVES_DEMO -->
-      <li>{ID}</li>
-      <!-- /CLAUDIT:MUST_HAVES_DEMO -->
-    </ul>
+<section id="quick-wins" class="tab-panel">
+  <div class="tab-header">
+    <p class="card-eyebrow">QUICK WINS · {COUNT_QUICK_WINS} findings</p>
+    <p class="tab-blurb">Single-file edits, settings tweaks, things you can fix in minutes.</p>
   </div>
-  <div class="missing">
-    <h4>Missing — and what's between you and {NEXT_BAND} <span class="n">{MUST_HAVES_MISSING_PADDED}</span></h4>
-    <ul>
-      <!-- CLAUDIT:MUST_HAVES_MISSING -->
-      <li>{ID}</li>
-      <!-- /CLAUDIT:MUST_HAVES_MISSING -->
-    </ul>
-  </div>
-</section>
-
-<!-- ════════════════════ § 02 · VITALS ════════════════════ -->
-<section class="major">
-  <div class="section-head">
-    <span class="section-num">§ 02</span>
-    <h3>Vital signs</h3>
-    <span class="meta">last 30 days · {AUDIT_SAMPLED_SESSIONS} sessions sampled</span>
-  </div>
-
-  <div class="vitals">
-    <!-- CLAUDIT:VITAL -->
-    <div class="vital{VITAL_CLASS}">
-      <div class="vital-label">{LABEL}</div>
-      <div class="vital-value">{VALUE}{UNIT_HTML}</div>
-      <div class="vital-note">{NOTE}</div>
-    </div>
-    <!-- /CLAUDIT:VITAL -->
-  </div>
-</section>
-
-<!-- ════════════════════ § 03 · QUESTS ════════════════════ -->
-<section class="major">
-  <div class="section-head">
-    <span class="section-num">§ 03</span>
-    <h3>Quests · the next moves</h3>
-    <span class="meta">{QUESTS_COUNT} selected · ranked by leverage</span>
-  </div>
-
-  <!-- CLAUDIT:QUEST -->
-  <article class="quest">
-    <div class="quest-num">{NUMERAL}</div>
-    <div>
-      <h4 class="quest-title">{TITLE}</h4>
-      <span class="quest-impact{IMPACT_CLASS}">{IMPACT}</span>
-      <p class="quest-prose">{PROSE_HTML}</p>
-      <pre class="quest-fix">{FIX}</pre>
-    </div>
-  </article>
-  <!-- /CLAUDIT:QUEST -->
-  </section>
-
-<!-- ════════════════════ § 04 · FINDINGS FIRED ════════════════════ -->
-<section class="major">
-  <div class="section-head">
-    <span class="section-num">§ 04</span>
-    <h3>Findings · what fired</h3>
-    <span class="meta">{FINDINGS_FIRED_COUNT} of {FINDINGS_TOTAL_COUNT} detectors · grouped by severity</span>
-  </div>
-
-  <!-- CLAUDIT:SEVERITY_GROUP -->
-  <div class="severity-band {SEVERITY_KEY}">
-    <span class="label">{SEVERITY_LABEL}</span>
-    <span class="rule"></span>
-    <span class="count">{COUNT_DETECTORS}</span>
-  </div>
-
-  <!-- CLAUDIT:FINDING -->
-  <details class="finding">
-    <summary>
-      <span class="marker-glyph"></span>
-      <span>{NAME}</span>
-      <span class="finding-id"><b>{ID}</b><span class="sep">·</span>{MEASURED_BADGE}</span>
+  <!-- CLAUDIT:QUEST_QUICK -->
+  <details class="quest-card sev-{SEVERITY}"{OPEN_ATTR}>
+    <summary class="quest-summary">
+      <span class="quest-num">{NUM_PADDED}</span>
+      <span class="quest-title-row">
+        <span class="quest-title">{TITLE}</span>
+        <span class="quest-tags">
+          <span class="tag tag-sev tag-{SEVERITY}">{SEVERITY}</span>
+          {IMPACT_TAG_HTML}
+        </span>
+      </span>
+      <span class="quest-marker">+</span>
     </summary>
-    <div class="finding-body">
-      <p>{PROSE}</p>
-      <div class="fix">
-        <strong>Fix</strong>
-        {FIX}
+    <div class="quest-body">
+      <div class="quest-evidence">
+        <p class="evidence-label">Evidence</p>
+        <p class="evidence-text">{EVIDENCE}</p>
       </div>
-      <div class="measured">measured · {MEASURED_DETAIL}</div>
+      <div class="quest-explain"><p class="explain-label">What this means</p><p>{EXPLAIN}</p></div>
+      <div class="quest-fix"><p class="fix-label">Fix</p><p>{FIX}</p></div>
+      <p class="quest-verify"><span class="verify-label">Verify · </span>{VERIFY}</p>
+      {DRILLDOWN_HTML}
     </div>
   </details>
-  <!-- /CLAUDIT:FINDING -->
-  <!-- /CLAUDIT:SEVERITY_GROUP -->
-
+  <!-- /CLAUDIT:QUEST_QUICK -->
 </section>
-
-<!-- ════════════════════ § 05 · FINDINGS CLEAN ════════════════════ -->
-<section class="major">
-  <div class="section-head">
-    <span class="section-num">§ 05</span>
-    <h3>Findings · clean</h3>
-    <span class="meta">{FINDINGS_CLEAN_COUNT} detectors evaluated · no issue found</span>
+<section id="medium" class="tab-panel">
+  <div class="tab-header">
+    <p class="card-eyebrow">MEDIUM EFFORT · {COUNT_MEDIUM} findings</p>
+    <p class="tab-blurb">Workflow or habit shifts. Hours, not days. Each one shifts your placement.</p>
   </div>
-
-  <details class="clean">
-    <summary>Show all {FINDINGS_CLEAN_COUNT} detectors that came back clean</summary>
-    <ul class="clean-list">
-      <!-- CLAUDIT:CLEAN_FINDING -->
-      <li><span class="ok">✓</span><b>{ID}</b> — {NOTE}</li>
-      <!-- /CLAUDIT:CLEAN_FINDING -->
-    </ul>
+  <!-- CLAUDIT:QUEST_MEDIUM -->
+  <details class="quest-card sev-{SEVERITY}"{OPEN_ATTR}>
+    <summary class="quest-summary">
+      <span class="quest-num">{NUM_PADDED}</span>
+      <span class="quest-title-row">
+        <span class="quest-title">{TITLE}</span>
+        <span class="quest-tags">
+          <span class="tag tag-sev tag-{SEVERITY}">{SEVERITY}</span>
+          {IMPACT_TAG_HTML}
+        </span>
+      </span>
+      <span class="quest-marker">+</span>
+    </summary>
+    <div class="quest-body">
+      <div class="quest-evidence">
+        <p class="evidence-label">Evidence</p>
+        <p class="evidence-text">{EVIDENCE}</p>
+      </div>
+      <div class="quest-explain"><p class="explain-label">What this means</p><p>{EXPLAIN}</p></div>
+      <div class="quest-fix"><p class="fix-label">Fix</p><p>{FIX}</p></div>
+      <p class="quest-verify"><span class="verify-label">Verify · </span>{VERIFY}</p>
+      {DRILLDOWN_HTML}
+    </div>
   </details>
+  <!-- /CLAUDIT:QUEST_MEDIUM -->
 </section>
-
-<!-- ════════════════════ § 06 · READING ════════════════════ -->
-<section class="major">
-  <div class="section-head">
-    <span class="section-num">§ 06</span>
-    <h3>What to learn next</h3>
-    <span class="meta">curated · 5 entries</span>
+<section id="deep" class="tab-panel">
+  <div class="tab-header">
+    <p class="card-eyebrow">DEEP WORK · {COUNT_DEEP} findings</p>
+    <p class="tab-blurb">Structural changes — set up new infrastructure, build new patterns, retrain instincts.</p>
   </div>
-
-  <ol class="reading">
-    <li>
-      <div>
-        <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Effective Context Engineering for AI Agents</a>
-        <span class="annot">Anthropic — the JIT context principle. Directly addresses § 03 quest v.</span>
+  <!-- CLAUDIT:QUEST_DEEP -->
+  <details class="quest-card sev-{SEVERITY}"{OPEN_ATTR}>
+    <summary class="quest-summary">
+      <span class="quest-num">{NUM_PADDED}</span>
+      <span class="quest-title-row">
+        <span class="quest-title">{TITLE}</span>
+        <span class="quest-tags">
+          <span class="tag tag-sev tag-{SEVERITY}">{SEVERITY}</span>
+          {IMPACT_TAG_HTML}
+        </span>
+      </span>
+      <span class="quest-marker">+</span>
+    </summary>
+    <div class="quest-body">
+      <div class="quest-evidence">
+        <p class="evidence-label">Evidence</p>
+        <p class="evidence-text">{EVIDENCE}</p>
       </div>
-    </li>
-    <li>
-      <div>
-        <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Prompt Caching</a>
-        <span class="annot">Anthropic — the math behind your 97.97% cache hit rate. Read it to defend the number.</span>
-      </div>
-    </li>
-    <li>
-      <div>
-        <a href="https://code.claude.com/docs/en/best-practices">Claude Code Best Practices</a>
-        <span class="annot">Anthropic — the canonical playbook. Recheck the verification and CLAUDE.md sections.</span>
-      </div>
-    </li>
-    <li>
-      <div>
-        <a href="https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it">Cherny on Every: How to use Claude Code like the people who built it</a>
-        <span class="annot">Subagent dispatch and plan-mode at scale, from the engineer who built Claude Code.</span>
-      </div>
-    </li>
-    <li>
-      <div>
-        <a href="https://miraflow.ai/blog/karpathy-claude-md-100k-github-stars-ai-coding-2026">Karpathy's CLAUDE.md (~65 lines)</a>
-        <span class="annot">The lean-CLAUDE.md reference. Targets § 03 quest iv.</span>
-      </div>
-    </li>
-  </ol>
+      <div class="quest-explain"><p class="explain-label">What this means</p><p>{EXPLAIN}</p></div>
+      <div class="quest-fix"><p class="fix-label">Fix</p><p>{FIX}</p></div>
+      <p class="quest-verify"><span class="verify-label">Verify · </span>{VERIFY}</p>
+      {DRILLDOWN_HTML}
+    </div>
+  </details>
+  <!-- /CLAUDIT:QUEST_DEEP -->
 </section>
-
-<!-- ════════════════════ CTA ════════════════════ -->
-<section class="cta">
-  <h4>Personalized followup.</h4>
-  <p>Drop your email and we'll send one short note with anything we'd add now that we've seen your harness up close. No list, no drip campaign — one note, then quiet unless you ask.</p>
-  <form action="https://claudit.acumen-iq.com/lead" method="post">
-    <input type="hidden" name="uuid" value="{UUID}">
-    <input type="email" name="email" required placeholder="you@example.com">
-    <button type="submit">Submit</button>
-  </form>
+<section id="sessions" class="tab-panel">
+  <div class="tab-header">
+    <p class="card-eyebrow">SESSIONS · {SESSIONS_ACTIVE} with activity ({COUNT_SESSIONS} total files)</p>
+    <p class="tab-blurb">Default sort: cost descending. {SESSIONS_TOTAL_COST} total. Click any column header to sort. Hover the project cell for the full path.</p>
+  </div>
+  <table class="session-table" data-sortable>
+    <thead>
+      <tr>
+        <th class="col-grade" data-sort="text">Grade</th>
+        <th class="col-cost" data-sort="num" data-dir="desc">Cost</th>
+        <th class="col-project" data-sort="text">Project</th>
+        <th class="col-model" data-sort="text">Model</th>
+        <th class="col-msgs" data-sort="num">Msgs</th>
+        <th class="col-cache" data-sort="num">Cache hit</th>
+        <th class="col-tokens" data-sort="num">Tokens</th>
+        <th class="col-flags" data-sort="no">Flags</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- CLAUDIT:SESSION_ROW -->
+      <tr>
+        <td class="col-grade" data-sort-value="{GRADE_NUM}"><span class="grade grade-{GRADE}">{GRADE}</span></td>
+        <td class="col-cost" data-sort-value="{COST_RAW}">{COST_DISPLAY}</td>
+        <td class="col-project" title="{PROJECT_PATH}">{PROJECT_NAME}</td>
+        <td class="col-model"><code>{MODEL}</code></td>
+        <td class="col-msgs" data-sort-value="{MSGS}">{MSGS_DISPLAY}</td>
+        <td class="col-cache" data-sort-value="{CACHE_RAW}">{CACHE_DISPLAY}</td>
+        <td class="col-tokens" data-sort-value="{TOKENS_RAW}" title="{TOKENS_TOOLTIP}">{TOKENS_DISPLAY}</td>
+        <td class="col-flags">{FLAGS_HTML}</td>
+      </tr>
+      <!-- /CLAUDIT:SESSION_ROW -->
+    </tbody>
+  </table>
 </section>
-
-<!-- ════════════════════ FOOTER ════════════════════ -->
-<footer>
-  <span>uuid · {UUID}</span>
-  <span class="colophon">claudit · printed at file://</span>
-  <span class="right">plugin v{PLUGIN_VERSION} · catalog {CATALOG_VERSION}</span>
+<section id="trends" class="tab-panel">
+  <div class="tab-header">
+    <p class="card-eyebrow">TRENDS</p>
+    <p class="tab-blurb">Per-day and per-run rollups. Hover charts for exact values.</p>
+  </div>
+  <div class="trend-card history-card">
+    <p class="trend-label">Run history · {RUN_HISTORY_COUNT}</p>
+    <svg viewBox="0 0 720 100" class="chart" role="img" aria-label="Band progression across runs">
+    <!-- CLAUDIT:RUN_HISTORY_SVG -->
+  </svg>
+    <div class="history-deltas">
+      <p class="history-since">since last run · {RUN_HISTORY_LAST_DATE}</p>
+      <!-- CLAUDIT:HISTORY_DELTA -->
+      <span class="delta delta-{DELTA_DIR}">{DELTA_TEXT}</span>
+      <!-- /CLAUDIT:HISTORY_DELTA -->
+    </div>
+  </div>
+  <div class="trend-card token-econ-card">
+    <p class="trend-label">Token economics · {ECON_TOTAL} total over {COUNT_SESSIONS} sessions</p>
+    <div class="econ-bar">
+      <!-- CLAUDIT:ECON_SEGMENT -->
+      <div class="econ-segment" style="flex-basis: {PCT}%; background: var(--{COLOR});" title="{TITLE}"></div>
+      <!-- /CLAUDIT:ECON_SEGMENT -->
+    </div>
+    <ul class="econ-legend">
+      <!-- CLAUDIT:ECON_LEGEND -->
+      <li>
+        <span class="econ-swatch" style="background: var(--{COLOR});"></span>
+        <span class="econ-name">{NAME}</span>
+        <span class="econ-tokens">{TOKENS}</span>
+        <span class="econ-pct">{PCT}%</span>
+      </li>
+      <!-- /CLAUDIT:ECON_LEGEND -->
+    </ul>
+  </div>
+  <div class="trends-grid">
+    <div class="trend-card">
+      <p class="trend-label">Daily spend (USD)</p>
+      <svg viewBox="0 0 560 140" class="chart" role="img" aria-label="Daily spend over last 30 days">
+    <line x1="38" y1="118" x2="552" y2="118" class="axis" />
+    <text x="34" y="16" class="axis-label" text-anchor="end">{SPEND_CHART_MAX}</text>
+    <text x="34" y="118" class="axis-label" text-anchor="end">$0</text>
+    <text x="38" y="136" class="axis-label">{SPEND_CHART_START}</text>
+    <text x="552" y="136" class="axis-label" text-anchor="end">{SPEND_CHART_END}</text>
+    <!-- CLAUDIT:SPEND_CHART_BARS -->
+  </svg>
+    </div>
+    <div class="trend-card">
+      <p class="trend-label">Daily token volume</p>
+      <svg viewBox="0 0 560 140" class="chart" role="img" aria-label="Daily token volume">
+    <line x1="50" y1="118" x2="552" y2="118" class="axis" />
+    <text x="34" y="16" class="axis-label" text-anchor="end">{TOKEN_CHART_MAX}</text>
+    <text x="34" y="118" class="axis-label" text-anchor="end">0</text>
+    <text x="50" y="136" class="axis-label">{SPEND_CHART_START}</text>
+    <text x="552" y="136" class="axis-label" text-anchor="end">{SPEND_CHART_END}</text>
+    <!-- CLAUDIT:DAILY_TOKEN_BARS -->
+  </svg>
+    </div>
+    <div class="trend-card">
+      <p class="trend-label">Sessions per day</p>
+      <svg viewBox="0 0 560 140" class="chart" role="img" aria-label="Sessions per day">
+    <line x1="38" y1="118" x2="552" y2="118" class="axis" />
+    <text x="34" y="16" class="axis-label" text-anchor="end">{SESSIONS_CHART_MAX}</text>
+    <text x="34" y="118" class="axis-label" text-anchor="end">0</text>
+    <text x="38" y="136" class="axis-label">{SPEND_CHART_START}</text>
+    <text x="552" y="136" class="axis-label" text-anchor="end">{SPEND_CHART_END}</text>
+    <!-- CLAUDIT:DAILY_SESSIONS_BARS -->
+  </svg>
+    </div>
+    <div class="trend-card">
+      <p class="trend-label">Cache hit rate per day</p>
+      <svg viewBox="0 0 560 140" class="chart" role="img" aria-label="Cache hit rate per day">
+    <line x1="38" y1="118" x2="552" y2="118" class="axis" />
+    <line x1="38" y1="63" x2="552" y2="63" class="axis-ref" stroke-dasharray="3 3" />
+    <text x="34" y="16" class="axis-label" text-anchor="end">100%</text>
+    <text x="34" y="67" class="axis-label" text-anchor="end">50%</text>
+    <text x="34" y="118" class="axis-label" text-anchor="end">0%</text>
+    <!-- CLAUDIT:DAILY_CACHE_HIT_LINE -->
+  </svg>
+    </div>
+  </div>
+</section>
+<section id="setup" class="tab-panel">
+  <div class="tab-header">
+    <p class="card-eyebrow">STARTUP LOAD</p>
+    <p class="tab-blurb">What loads into context before you've typed a thing.</p>
+  </div>
+  <div class="startup-bar"><!-- CLAUDIT:LOAD_SEGMENT -->
+    <div class="startup-segment" style="flex-basis: {PCT}%;" data-idx="{IDX}" title="{TITLE}"></div>
+    <!-- /CLAUDIT:LOAD_SEGMENT -->
+  </div>
+  <ul class="legend-list">
+    <!-- CLAUDIT:LOAD_LEGEND -->
+    <li class="legend-item">
+        <span class="legend-swatch" data-idx="{IDX}"></span>
+        <span class="legend-name">{NAME}</span>
+        <span class="legend-tokens">{TOKENS}</span>
+        <span class="legend-pct">{PCT}%</span>
+      </li>
+      <!-- /CLAUDIT:LOAD_LEGEND -->
+  </ul>
+  <div class="setup-inventory">
+    <p class="card-eyebrow" style="margin-top: 2rem;">INVENTORY</p>
+    <div class="inventory-grid">
+      <!-- CLAUDIT:INVENTORY_STAT -->
+      <div class="inventory-stat">
+        <p class="inv-value">{VALUE}</p>
+        <p class="inv-label">{LABEL}</p>
+      </div>
+      <!-- /CLAUDIT:INVENTORY_STAT -->
+    </div>
+    <details class="inventory-details">
+        <summary>Enabled plugins ({COUNT_ENABLED_PLUGINS})</summary>
+        <ul class="inventory-list">
+          <!-- CLAUDIT:PLUGIN_ITEM -->
+          <li><code>{NAME}</code></li>
+          <!-- /CLAUDIT:PLUGIN_ITEM -->
+        </ul>
+      </details>
+  </div>
+</section>
+<section class="capture">
+  <div class="capture-inner">
+    <div class="capture-text">
+      <p class="card-eyebrow">NEXT</p>
+      <h2 class="capture-headline">Want help moving up the curve?</h2>
+      <p class="capture-prose">claudit is free and the catalog updates monthly. Drop your email to get notified when meaningful new findings ship — or, if your audit history shows we could help directly, we'll reach out.</p>
+      <p class="capture-disclosure">By submitting, your email is linked to your audit UUID (<code>{UUID_SHORT}…</code>) so we can correlate findings to context. Plain disclosure, opt out anytime by replying.</p>
+    </div>
+    <form class="capture-form" action="https://claudit.acumen-iq.com/lead" method="post" novalidate>
+      <input type="hidden" name="uuid" value="{UUID}" />
+      <input type="hidden" name="band" value="{BAND_LOWER}" />
+      <input type="hidden" name="progress" value="{PROGRESSION_INT}" />
+      <input type="hidden" name="catalog" value="{CATALOG_VERSION}" />
+      <label class="capture-label" for="email">Your email</label>
+      <div class="capture-row">
+        <input class="capture-input" type="email" id="email" name="email" required placeholder="you@domain.com" autocomplete="email" />
+        <button class="capture-button" type="submit">Subscribe</button>
+      </div>
+      <p class="capture-foot">Posts directly from this report to <code>collector.claudit.dev</code>. No tracking pixels.</p>
+    </form>
+  </div>
+</section>
+<footer class="footer">
+  <div class="footer-row">
+    <span>claudit · catalog v{CATALOG_VERSION} · run completed in {RUN_DURATION}</span>
+    <span>UUID <code>{UUID_SHORT}</code></span>
+  </div>
+  <p class="footer-note">Findings grounded in published Anthropic guidance, named-practitioner content, and ArXiv research. Detection rules and capability catalog are open source.</p>
 </footer>
-
-</div>
-</body>
-</html>
+<script>
+(function(){
+  // Sortable tables: any table with [data-sortable] gets clickable headers.
+  document.querySelectorAll('table[data-sortable]').forEach(function(table){
+    var thead = table.tHead; if (!thead) return;
+    var headers = thead.rows[0].cells;
+    var tbody = table.tBodies[0]; if (!tbody) return;
+    Array.from(headers).forEach(function(th, idx){
+      if (th.dataset.sort === 'no') return;
+      th.classList.add('sortable');
+      th.addEventListener('click', function(){
+        var asc = th.dataset.dir !== 'asc';
+        Array.from(headers).forEach(function(h){ h.removeAttribute('data-dir'); });
+        th.dataset.dir = asc ? 'asc' : 'desc';
+        var rows = Array.from(tbody.rows);
+        var sortType = th.dataset.sort || 'text';
+        rows.sort(function(a, b){
+          var av = a.cells[idx].dataset.sortValue || a.cells[idx].textContent.trim();
+          var bv = b.cells[idx].dataset.sortValue || b.cells[idx].textContent.trim();
+          if (sortType === 'num') {
+            var an = parseFloat(av.replace(/[^0-9.-]/g, '')) || 0;
+            var bn = parseFloat(bv.replace(/[^0-9.-]/g, '')) || 0;
+            return asc ? an - bn : bn - an;
+          }
+          return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+        });
+        rows.forEach(function(r){ tbody.appendChild(r); });
+      });
+    });
+  });
+})();
+</script>
+</body></html>
