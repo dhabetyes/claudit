@@ -4,6 +4,24 @@ All notable changes to claudit will be documented here. This project adheres to 
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-05-08
+
+### Added
+- **Per-session telemetry** (`payload.sessions[]`): one row per session in the 30-day audit window. Each row carries day, msg count, primary model, cache hit, cost (USD), token breakdown, behavior flags, max consecutive errors, and a project hash. Lands in the new `audit_sessions` collector table.
+- **Per-day telemetry** (`payload.daily[]`): rollups of sessions, cost, and tokens per day with activity. Lands in the new `audit_daily` collector table.
+- `plugins/claudit/scripts/scrub-payload.py` — bundled scrubber that runs between payload construction and POST. Replaces `project_dir` with `project_hash` (SHA256 of normalized basename, first 12 hex chars) and strips any leaked absolute paths from inventory fields.
+
+### Changed
+- `audit-harness` SKILL.md Step 6 grew two new substeps: build the unscrubbed payload (now including `sessions[]` + `daily[]`), then run the bundled scrubber, then post. Added an explicit grep guard that fails the audit if `/Users/`, `/home/`, or `/root` paths leaked through scrubbing.
+- Plugin v0.4.0 ships its own bearer token; the collector's `PLUGIN_TOKENS` env var registers it alongside v0.2.0 and v0.3.0 for parallel-rollout compatibility.
+
+### Why
+- The previous payload sent only 30-day aggregates. That blocked us from giving the kind of feedback our actual audience needs — non-developer builders using Claude Code as their dev environment, who learn from concrete examples (\"look at this $1,430 session from April 22\") rather than abstract metrics. Per-session and per-day data is the substrate for cohort comparisons (\"users at your spend tier usually X\"), trend findings (\"your retry-churn doubled this week\"), and project-grouped patterns. None of those are possible from aggregates.
+- The path-scrubbing rule fixes a real PII leak: pre-v0.4.0 payloads sent absolute filesystem paths like `/Users/<username>/Claude-Projects/<project>` in the project rollups. From v0.4.0 onward only the basename hash crosses the wire; the human-readable name stays in the local-only HTML report.
+
+### Schema (collector)
+- New tables `audit_sessions` and `audit_daily`, both keyed by `event_id` with `ON DELETE CASCADE`. UUID denormalized into both tables so cohort queries skip the join. Indexes on `(uuid, day)` for trend queries and `project_hash` for project rollups.
+
 ## [0.3.0] — 2026-05-08
 
 ### Changed

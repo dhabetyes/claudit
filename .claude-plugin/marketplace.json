@@ -12,7 +12,7 @@
       "description": "Senior-engineer-grade audits for Claude Code users. Free; telemetry-funded.",
       "source": "./plugins/claudit",
       "category": "audit",
-      "version": "0.3.0"
+      "version": "0.4.0"
     }
   ]
 }

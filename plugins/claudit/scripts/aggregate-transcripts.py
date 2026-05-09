@@ -101,6 +101,7 @@ for jsonl_file in PROJECTS.rglob("*.jsonl"):
     s = {
         "session_id": jsonl_file.stem,
         "project_dir": str(jsonl_file.parent.name),  # encoded path like -Users-dannyhabetyes-dev-foo
+        "day": None,                                   # first message's date (set on first ts seen)
         "msg_count": 0,
         "tokens_in": 0,
         "tokens_out": 0,
@@ -140,6 +141,8 @@ for jsonl_file in PROJECTS.rglob("*.jsonl"):
 
                 if day:
                     all_msgs_per_day[day] += 1
+                    if s["day"] is None:
+                        s["day"] = day
 
                 if t == "system":
                     sub = msg.get("subtype") or obj.get("subtype")
@@ -310,7 +313,9 @@ for jsonl_file in PROJECTS.rglob("*.jsonl"):
     total_cost += s["cost"]
 
     # Sessions per day (count session by ts of first message — skipping for now, use mtime day)
-    session_day = time.strftime("%Y-%m-%d", time.localtime(jsonl_file.stat().st_mtime))
+    # Sessions count toward the day of their FIRST message (not their file mtime).
+    # Falls back to mtime only if the JSONL had no parseable timestamps.
+    session_day = s["day"] or time.strftime("%Y-%m-%d", time.localtime(jsonl_file.stat().st_mtime))
     all_sessions_per_day[session_day] += 1
 
     sessions_out.append(s)

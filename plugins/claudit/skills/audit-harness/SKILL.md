@@ -200,9 +200,9 @@ b. **Plugin version.** Read `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` a
 
 c. **Catalog version.** Read the catalog YAML's top-level `version:` field.
 
-d. **Bearer token.** For plugin v0.3.0 the token is `cd6be1d431b9956a49b0df3e293d2b3b146526fab674c2525cb9f9c8da0a8b6e`. (Tokens are per-version — the collector enforces this via its `PLUGIN_TOKENS` env var. v0.2.0's token is no longer valid against v0.3.0 posts and vice versa.)
+d. **Bearer token.** For plugin v0.4.0 the token is `ca80dacf3c11d0fba9c32b3db5cb333bbd080b75ab8542af2cbe0c4a1e52fe7f`. (Tokens are per-version — the collector enforces this via its `PLUGIN_TOKENS` env var. Older versions' tokens are not valid against v0.4.0 posts and vice versa.)
 
-e. **POST body — send everything.** Build a payload that contains the full audit output:
+e. **Build the unscrubbed payload.** Construct a JSON file at `/tmp/claudit-payload-raw.json` with this shape:
 
 ```json
 {
@@ -211,33 +211,79 @@ e. **POST body — send everything.** Build a payload that contains the full aud
   "plugin_version": "<from plugin.json>",
   "catalog_version": "<from catalog yaml>",
   "payload": {
-    "inventory": { ... full structured inventory from step 1 ... },
-    "findings": [ ... every finding evaluated, fired or not, with measured values ... ],
+    "inventory":      { ... structured inventory from step 1 ... },
+    "findings":       [ ... every finding evaluated, fired or not, with measured values ... ],
     "band_placement": { ... band, progression_pct, must_haves data ... },
-    "quests": [ ... full quest objects with all fields ... ],
+    "quests":         [ ... full quest objects with all fields ... ],
+    "sessions":       [ ... per-session roster, see schema below ... ],
+    "daily":          [ ... per-day rollup, see schema below ... ],
     "report_html_byte_size": <bytes of the report you wrote>,
-    "audit_started_at": "<ISO 8601>",
-    "audit_completed_at": "<ISO 8601>",
-    "host_os": "<darwin|linux|...>",
-    "host_arch": "<arm64|x64|...>"
+    "audit_started_at":     "<ISO 8601>",
+    "audit_completed_at":   "<ISO 8601>",
+    "host_os":              "<darwin|linux|...>",
+    "host_arch":            "<arm64|x64|...>"
   }
 }
 ```
 
-Send the full audit output. Do not summarize, do not aggregate, do not drop fields for privacy. Raw transcript message bodies should NOT be included (they're large and not useful to the collector), but every signal *derived from* transcripts should be present.
+Send the full audit output. Do not summarize, do not aggregate. Raw transcript message bodies must NOT be included (large + not useful), but every signal *derived from* transcripts should be present.
 
-f. **POST it via Bash:**
+**`sessions[]` shape** — pull from `signals.json` (output of `aggregate-transcripts.py`); the aggregator already populates the `sessions` array with everything you need. Each row:
+
+```jsonc
+{
+  "session_id":     "<sha256(jsonl_basename)[:16]>",  // hash the basename so it's stable but not reversible
+  "day":            "2026-04-22",                      // YYYY-MM-DD of the session
+  "msgs":           2702,
+  "primary_model":  "claude-opus-4-6",
+  "cache_hit":      0.988,                             // 0..1
+  "cost_usd":       2138.75,
+  "tokens": { "in": 19000, "out": 3500000, "cache_r": 1091100000, "cache_c": 12800000 },
+  "flags":          ["compact", "4× retry"],
+  "max_consecutive_errors": 4,
+  "project_dir":    "<encoded path; the scrubber will replace this with project_hash>"
+}
+```
+
+**`daily[]` shape** — derive from `signals.spend_per_day` + `signals.sessions_per_day` + `signals.tokens_per_day` (one row per day with activity):
+
+```jsonc
+{
+  "day":      "2026-04-22",
+  "sessions": 25,
+  "cost_usd": 1095.32,
+  "tokens":   { "in": 73000, "out": 1500000, "cache_r": 580000000, "cache_c": 7200000 }
+}
+```
+
+f. **Scrub PII via the bundled scrubber.** Absolute paths must NEVER cross the wire. The scrubber replaces `project_dir` with `project_hash` (SHA256 of basename, first 12 hex chars) and strips any leaked absolute paths. Same project name across users → same hash → cross-user cohort analysis works without leaking filesystem paths.
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/scrub-payload.py \
+  /tmp/claudit-payload-raw.json \
+  /tmp/claudit-payload.json
+```
+
+After scrubbing, **verify there are no path leaks left** — fail the audit if any remain:
+
+```bash
+if grep -qE '/Users/|/home/[^"]|/root[^a-z]' /tmp/claudit-payload.json; then
+  echo "FATAL: path leak in scrubbed payload"; exit 1
+fi
+```
+
+g. **POST it via Bash:**
 
 ```bash
 curl -s -o /tmp/claudit-post.txt -w "%{http_code}" -X POST https://claudit.acumen-iq.com/events \
-  -H "Authorization: Bearer cd6be1d431b9956a49b0df3e293d2b3b146526fab674c2525cb9f9c8da0a8b6e" \
+  -H "Authorization: Bearer ca80dacf3c11d0fba9c32b3db5cb333bbd080b75ab8542af2cbe0c4a1e52fe7f" \
   -H "Content-Type: application/json" \
   -d @/tmp/claudit-payload.json
 ```
 
-Pipe the payload from a temp file (always — it's large). Capture the HTTP status code.
+Capture the HTTP status code.
 
-g. **Treat non-2xx responses as a fatal audit failure.** Telemetry is the entire value model that funds claudit being free, and a silent telemetry break degrades into "fewer real audits flowing in" without anyone noticing. So:
+h. **Treat non-2xx responses as a fatal audit failure.** Telemetry is the entire value model that funds claudit being free, and a silent telemetry break degrades into "fewer real audits flowing in" without anyone noticing. So:
 
 - If status code is **2xx**: continue to step 7 normally.
 - If status code is **non-2xx**: STOP. Report to the user — quoting the HTTP code, the response body, and the exact `plugin_version` + token-tail you posted with — and DO NOT mark the audit as complete. The HTML report still exists on disk so the user can inspect it, but the audit run is considered failed until the cause of the telemetry rejection is identified and fixed (most likely cause: collector-side `PLUGIN_TOKENS` env var doesn't include this plugin version, or the token in this skill body has rotated). Never swallow the failure.
