@@ -1,5 +1,6 @@
-# Private design docs (briefs, TODOs, working notes — not part of the public plugin distribution)
-docs/private/
+# Private design docs, briefs, and TODOS live in the sibling private repo
+# dhabetyes/claudit-catalog (~/dev/claudit-catalog/), not here.
+# docs/private/ is retired in this repo; never recreate it.
 
 .env
 .env.*
